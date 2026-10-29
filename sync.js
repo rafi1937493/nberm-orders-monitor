@@ -155,7 +155,7 @@
       total: total,
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
-      pageSize: (rangeEnd - rangeStart + 1) > 0 ? (rangeEnd - rangeStart + 1) : 100,
+      pageSize: 100,
       lockedIds: lockedIds,
       lockedCount: finalLockedCount
     };
@@ -163,9 +163,10 @@
 
   /**
    * Scans an entire queue across ALL pages (beyond the 100 limit):
-   * 1. Attempts single-fetch with large limit (e.g. limit=1000)
-   * 2. If Joomla caps at 100, sequentially/parallel fetches pages 1, 2, 3...
+   * 1. Fetches page 1 with standard limit=100 (keeps session at 100)
+   * 2. If records exceed 100, fetches remaining pages in 100-item chunks (100, 200, 300...)
    * 3. Collects and deduplicates every locked order across all pages!
+   * 4. Silently restores session to limit=100 & limitstart=0 so user's PC view is always 100
    */
   async function scanEntireQueue(queueType, force = false) {
     const now = Date.now();
@@ -177,8 +178,9 @@
     const taskName = queueType === 'queue' ? 'listusartworkrequests2' : 'listusartworkspendingapproval';
 
     try {
-      // Step 1: Fetch Page 1 (request limit=1000 to attempt retrieving all records in one shot)
-      const cleanUrl1 = `${baseUrl}&limit=1000&limitstart=0&searchqueue=&searchrush=&searchlate=&search=`;
+      const PAGE_SIZE = 100;
+      // Step 1: Fetch Page 1 (standard limit=100 to preserve PC user's 100-item view preference)
+      const cleanUrl1 = `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=`;
       const res1 = await fetch(cleanUrl1, { credentials: 'include' });
       if (!res1.ok) {
         console.warn(`[NBERM Phone Sync] Fetch failed for ${queueType} (status ${res1.status})`);
@@ -203,8 +205,8 @@
       const allLockedIds = new Set(page1.lockedIds);
       let totalFallbackLocks = page1.lockedIds.size === 0 ? page1.lockedCount : 0;
 
-      // Check if limit=1000 returned all rows (e.g. rangeEnd >= totalCount)
-      if (page1.rangeEnd >= totalCount || page1.rangeEnd === 0) {
+      // Check if page 1 returned all rows (e.g. rangeEnd >= totalCount or totalCount <= 100)
+      if (page1.rangeEnd >= totalCount || page1.rangeEnd === 0 || totalCount <= PAGE_SIZE) {
         // All rows were returned in page 1!
         const totalLocked = allLockedIds.size > 0 ? (allLockedIds.size + totalFallbackLocks) : page1.lockedCount;
         const result = {
@@ -217,23 +219,27 @@
         lastScanTimestamp[queueType] = now;
         if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
 
+        // Guarantee user's PC session remains at limit=100 and limitstart=0
+        try {
+          fetch(`${baseUrl}&limit=100&limitstart=0`, { credentials: 'include' }).catch(() => {});
+        } catch (e) {}
+
         console.log(`%c[NBERM Scan: ${queueType.toUpperCase()}] Complete in 1 page: Total: ${totalCount} | Locked: ${totalLocked} | Open: ${result.unlocked}`, 'color: #38bdf8; font-weight: bold;');
         return result;
       }
 
-      // Step 2: Joomla capped at pageSize (typically 100). Fetch remaining pages (100, 200, 300...)
-      const pageSize = page1.rangeEnd > 0 ? page1.rangeEnd : 100;
-      const totalPages = Math.ceil(totalCount / pageSize);
+      // Step 2: Total records exceed 100. Fetch remaining pages (100, 200, 300...)
+      const totalPages = Math.ceil(totalCount / PAGE_SIZE);
       console.log(`[NBERM Scan: ${queueType.toUpperCase()}] Paginating: Total ${totalCount} items across ${totalPages} pages (Page 1 has ${page1.lockedCount} locks)`);
 
       const remainingFetches = [];
-      for (let start = pageSize; start < totalCount; start += pageSize) {
+      for (let start = PAGE_SIZE; start < totalCount; start += PAGE_SIZE) {
         // Send via both POST and GET parameters so Joomla accepts limitstart regardless of configuration
-        const pageUrl = `${baseUrl}&limit=${pageSize}&limitstart=${start}&searchqueue=&searchrush=&searchlate=&search=`;
+        const pageUrl = `${baseUrl}&limit=100&limitstart=${start}&searchqueue=&searchrush=&searchlate=&search=`;
         const postData = new URLSearchParams();
         postData.append('option', 'com_mps');
         postData.append('task', taskName);
-        postData.append('limit', String(pageSize));
+        postData.append('limit', '100');
         postData.append('limitstart', String(start));
         postData.append('searchqueue', '');
         postData.append('searchrush', '');
@@ -269,9 +275,9 @@
         pageIdx++;
       }
 
-      // Reset session limitstart back to 0 silently so user's PC view is unaffected
+      // Reset session limitstart back to 0 silently with limit=100 so user's PC view is unaffected
       try {
-        fetch(`${baseUrl}&limit=${pageSize}&limitstart=0`, { credentials: 'include' }).catch(() => {});
+        fetch(`${baseUrl}&limit=100&limitstart=0`, { credentials: 'include' }).catch(() => {});
       } catch (e) {}
 
       const finalLockedTotal = allLockedIds.size > 0 ? (allLockedIds.size + totalFallbackLocks) : (page1.lockedCount + totalFallbackLocks);
