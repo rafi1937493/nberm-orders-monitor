@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#11192e" />
+      <stop offset="50%" stop-color="#0a0f1d" />
+      <stop offset="100%" stop-color="#050811" />
+    </linearGradient>
+
+    <!-- Border Glow Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#3b82f6" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.8" />
+    </linearGradient>
+
+    <!-- Cube Top Gradient -->
+    <linearGradient id="topGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9" />
+      <stop offset="50%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+
+    <!-- Cube Left Gradient -->
+    <linearGradient id="leftGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <!-- Cube Right Gradient -->
+    <linearGradient id="rightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+
+    <!-- Lower Layer Top Gradient -->
+    <linearGradient id="lowerTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="liveDotGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- App Icon Background Squircle -->
+  <rect x="20" y="20" width="472" height="472" rx="110" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="4" />
+
+  <!-- Ambient Background Aura -->
+  <circle cx="256" cy="256" r="140" fill="#38bdf8" opacity="0.08" filter="url(#neonGlow)" />
+  <circle cx="256" cy="310" r="110" fill="#10b981" opacity="0.07" filter="url(#neonGlow)" />
+
+  <!-- ISOMETRIC QUEUE STACK -->
+  <g transform="translate(0, 5)">
+    <!-- LOWER LAYER (Representing Incoming Orders Queue) -->
+    <!-- Lower Left -->
+    <path d="M 140 285 L 256 345 L 256 375 L 140 315 Z" fill="#047857" opacity="0.9" />
+    <!-- Lower Right -->
+    <path d="M 256 345 L 372 285 L 372 315 L 256 375 Z" fill="#065f46" opacity="0.9" />
+    <!-- Lower Top Rim -->
+    <path d="M 256 225 L 372 285 L 256 345 L 140 285 Z" fill="url(#lowerTopGrad)" opacity="0.8" />
+
+    <!-- MIDDLE LAYER (Spacer / Floating Depth) -->
+    <path d="M 155 240 L 256 295 L 357 240 L 256 185 Z" fill="#0f172a" opacity="0.6" />
+
+    <!-- UPPER HERO CUBE (Active Monitored Order Box) -->
+    <!-- Hero Left Face -->
+    <path d="M 140 200 L 256 262 L 256 312 L 140 250 Z" fill="url(#leftGrad)" filter="url(#neonGlow)" />
+    <!-- Hero Right Face -->
+    <path d="M 256 262 L 372 200 L 372 250 L 256 312 Z" fill="url(#rightGrad)" />
+    <!-- Hero Top Face -->
+    <path d="M 256 138 L 372 200 L 256 262 L 140 200 Z" fill="url(#topGrad)" />
+
+    <!-- Top Face Graphic: Glowing Live Signal / Order Pulse Indicator -->
+    <path d="M 200 200 L 235 182 L 256 212 L 280 188 L 312 205" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" />
+
+    <!-- Horizontal Neon Accents on Hero Box -->
+    <line x1="160" y1="230" x2="236" y2="270" stroke="#38bdf8" stroke-width="3" opacity="0.6" stroke-linecap="round" />
+    <line x1="276" y1="270" x2="352" y2="230" stroke="#67e8f9" stroke-width="3" opacity="0.6" stroke-linecap="round" />
+  </g>
+
+  <!-- LIVE STATUS PULSE INDICATOR (Top Right Badge) -->
+  <g transform="translate(365, 85)" filter="url(#liveDotGlow)">
+    <circle cx="20" cy="20" r="22" fill="#10b981" opacity="0.25" />
+    <circle cx="20" cy="20" r="14" fill="#090d16" stroke="#10b981" stroke-width="3" />
+    <circle cx="20" cy="20" r="7" fill="#34d399" />
+  </g>
+</svg>

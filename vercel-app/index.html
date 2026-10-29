@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NBERM Live">
+  <meta name="theme-color" content="#090d16">
+  <meta name="description" content="Next-Gen Enterprise Order & Queue Monitor for NBERM.">
+
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+
+  <title>NBERM Dashboard • Live Orders Monitor</title>
+
+  <style>
+    :root {
+      --bg-main: #090e17;
+      --bg-surface: #0f1623;
+      --bg-card: rgba(15, 23, 38, 0.75);
+      --bg-teal-card: rgba(11, 28, 28, 0.65);
+      --border-teal: rgba(16, 185, 129, 0.18);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      
+      --accent-orange: #f59e0b;
+      --accent-orange-bg: #d97706;
+      --accent-emerald: #10b981;
+      --accent-emerald-light: #34d399;
+      --accent-cyan: #06b6d4;
+      --accent-cyan-light: #38bdf8;
+      --accent-purple: #8b5cf6;
+      --accent-rose: #f43f5e;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #111d33 0%, #090e17 55%, #05070d 100%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: max(14px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+      user-select: none;
+      -webkit-user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* Outer Full-Width App Shell */
+    .app-shell {
+      width: 100%;
+      max-width: 1380px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    /* 1. TOP NAV BAR (Ventor Inspired) */
+    .top-navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 10px 18px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon-wrap {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+    .brand-icon-wrap svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .brand-name {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* Center Pill Tabs (Ventor Style) */
+    .nav-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 4px;
+      border-radius: 9999px;
+      border: 1px solid var(--border-subtle);
+    }
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+    .nav-pill:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-pill.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+      font-weight: 700;
+    }
+
+    /* Right Action Bar */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent-emerald-light);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.85); }
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      border-radius: 10px;
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .icon-btn.rotating svg {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 2. SUBHEADER WITH DASHBOARD TITLE */
+    .dashboard-subheader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 4px 6px;
+    }
+    .subheader-left {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .page-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+    .page-subtext {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .subheader-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sync-badge {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* 3. TOP 4 KPI TILES (Ventor Emerald Cards) */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .kpi-card {
+      background: linear-gradient(145deg, rgba(14, 38, 38, 0.75) 0%, rgba(9, 23, 26, 0.85) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-teal);
+      border-radius: 20px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+    .kpi-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .kpi-icon-pill {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald-light);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .kpi-label {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .kpi-body {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .kpi-number {
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+    .kpi-trend {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .kpi-trend.emerald {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .kpi-trend.amber {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .kpi-trend.cyan {
+      background: rgba(6, 182, 212, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    /* 4. MIDDLE SECTION (Donut Distribution & Hourly Velocity) */
+    .middle-grid {
+      display: grid;
+      grid-template-columns: 4.8fr 7.2fr;
+      gap: 16px;
+    }
+
+    .analytics-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 22px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .card-headline-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-headline {
+      font-size: 17px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.2px;
+    }
+    .card-headline-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Left Card: Order By Store Layout */
+    .distribution-content {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      align-items: center;
+      gap: 18px;
+    }
+    .bars-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .bar-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .bar-item-dot-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #cbd5e1;
+    }
+    .bar-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .bar-pct-val {
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .mini-track {
+      width: 100%;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .mini-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.5s ease;
+    }
+
+    /* Donut Chart SVG Wrapper */
+    .donut-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .donut-svg {
+      width: 160px;
+      height: 160px;
+      transform: rotate(-90deg);
+    }
+    .donut-center-text {
+      position: absolute;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .donut-center-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .donut-center-val {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+
+    /* Right Card: Wave & Bar Order Overview */
+    .velocity-chart-wrap {
+      width: 100%;
+      height: 160px;
+      position: relative;
+    }
+    .velocity-chart-wrap svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* 5. DETAILED QUEUE CARDS (APPROVAL & DESIGN) */
+    .queues-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .queue-detailed-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 22px;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .queue-detailed-card:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+    .queue-detailed-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 4px;
+    }
+    .queue-detailed-card.approval::before {
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      box-shadow: 0 0 12px #38bdf8;
+    }
+    .queue-detailed-card.design::before {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+      box-shadow: 0 0 12px #f59e0b;
+    }
+
+    .card-meta-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title-badge-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .queue-card-name {
+      font-size: 19px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.2px;
+    }
+    .queue-category-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-dim);
+    }
+    .queue-total-pill {
+      font-size: 13px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 5px 14px;
+      border-radius: 10px;
+      color: #ffffff;
+    }
+
+    .dual-metric-boxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .metric-brick {
+      border-radius: 16px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      position: relative;
+    }
+    .metric-brick.locked {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .metric-brick.open {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .metric-brick-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .metric-brick.locked .metric-brick-header { color: #fbbf24; }
+    .metric-brick.open .metric-brick-header { color: #34d399; }
+    .metric-brick-digit {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1;
+      margin: 4px 0 2px;
+    }
+    .metric-brick.locked .metric-brick-digit { color: #fef08a; }
+    .metric-brick.open .metric-brick-digit { color: #a7f3d0; }
+    .metric-brick-desc {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    /* 6. BOTTOM STATUS BAR */
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .bottom-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .refresh-pill-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .refresh-pill-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    /* RESPONSIVE BREAKPOINTS */
+    @media (max-width: 1100px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .middle-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .top-navbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .nav-brand {
+        justify-content: space-between;
+      }
+      .nav-pills {
+        justify-content: center;
+      }
+      .nav-actions {
+        justify-content: space-between;
+      }
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .distribution-content {
+        grid-template-columns: 1fr;
+      }
+      .queues-row {
+        grid-template-columns: 1fr;
+      }
+      .dashboard-subheader {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- 1. TOP NAVBAR (VENTOR STYLE) -->
+    <header class="top-navbar">
+      <div class="nav-brand">
+        <div class="brand-icon-wrap">
+          <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0c1222" />
+                <stop offset="100%" stop-color="#050811" />
+              </linearGradient>
+              <linearGradient id="topGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10b981" />
+                <stop offset="100%" stop-color="#047857" />
+              </linearGradient>
+              <linearGradient id="leftGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b" />
+                <stop offset="100%" stop-color="#0f172a" />
+              </linearGradient>
+              <linearGradient id="rightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#0ea5e9" />
+                <stop offset="100%" stop-color="#0369a1" />
+              </linearGradient>
+            </defs>
+            <rect x="20" y="20" width="472" height="472" rx="110" fill="url(#bgGrad)" stroke="#10b981" stroke-width="8" />
+            <g transform="translate(0, 5)">
+              <path d="M 140 285 L 256 345 L 256 375 L 140 315 Z" fill="#047857" opacity="0.9" />
+              <path d="M 256 345 L 372 285 L 372 315 L 256 375 Z" fill="#065f46" opacity="0.9" />
+              <path d="M 140 200 L 256 262 L 256 312 L 140 250 Z" fill="url(#leftGrad)" />
+              <path d="M 256 262 L 372 200 L 372 250 L 256 312 Z" fill="url(#rightGrad)" />
+              <path d="M 256 138 L 372 200 L 256 262 L 140 200 Z" fill="url(#topGrad)" />
+              <path d="M 200 200 L 235 182 L 256 212 L 280 188 L 312 205" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+            </g>
+            <circle cx="385" cy="105" r="14" fill="#090d16" stroke="#10b981" stroke-width="3" />
+            <circle cx="385" cy="105" r="7" fill="#34d399" />
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">NBERM</div>
+          <div class="brand-sub">Enterprise Orders Monitor</div>
+        </div>
+      </div>
+
+      <!-- Center Pill Navigation -->
+      <nav class="nav-pills">
+        <a class="nav-pill active" href="#dashboard">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Dashboard
+        </a>
+        <a class="nav-pill" href="#design" onclick="scrollToElement('design-card')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          Design
+        </a>
+        <a class="nav-pill" href="#approval" onclick="scrollToElement('approval-card')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Approval
+        </a>
+      </nav>
+
+      <!-- Right Action Controls -->
+      <div class="nav-actions">
+        <div class="live-pill">
+          <span class="live-dot"></span>
+          <span>LIVE</span>
+        </div>
+
+        <button id="sound-btn" class="icon-btn" onclick="toggleAudio()" title="Sound alert on new locks">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        </button>
+
+        <button id="fullscreen-btn" class="icon-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen (F)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+        </button>
+
+        <button id="refresh-icon-btn" class="icon-btn" onclick="triggerManualRefresh()" title="Refresh Now (R)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. SUBHEADER -->
+    <div class="dashboard-subheader">
+      <div class="subheader-left">
+        <h1 class="page-title">Dashboard</h1>
+        <span class="page-subtext">Live queue status and designer lock intelligence</span>
+      </div>
+      <div class="subheader-right">
+        <span class="sync-badge" id="sync-time-badge">Syncing with Chrome extension...</span>
+      </div>
+    </div>
+
+    <!-- 3. TOP 4 KPI TILES (VENTOR EMERALD CARDS) -->
+    <section class="kpi-grid">
+      <!-- KPI 1 -->
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Total Workload</span>
+          <div class="kpi-icon-pill">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-number" id="kpi-total">--</div>
+          <div class="kpi-trend emerald">↗ 100% Active</div>
+        </div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Total Locked Orders</span>
+          <div class="kpi-icon-pill" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-number" id="kpi-locked" style="color: #fef08a;">--</div>
+          <div class="kpi-trend amber" id="kpi-locked-trend">↗ --% Locked</div>
+        </div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Available Orders</span>
+          <div class="kpi-icon-pill" style="background: rgba(6, 182, 212, 0.15); color: #38bdf8; border-color: rgba(6, 182, 212, 0.3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-number" id="kpi-open" style="color: #a7f3d0;">--</div>
+          <div class="kpi-trend emerald" id="kpi-open-trend">↗ --% Open</div>
+        </div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Queue Allocation</span>
+          <div class="kpi-icon-pill" style="background: rgba(139, 92, 246, 0.15); color: #c084fc; border-color: rgba(139, 92, 246, 0.3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </div>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-number" id="kpi-ratio" style="color: #e0e7ff; font-size: 26px;">--</div>
+          <div class="kpi-trend cyan">Design vs Appr</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. MIDDLE SECTION (DONUT DISTRIBUTION & ACTIVITY OVERVIEW) -->
+    <section class="middle-grid">
+      <!-- Card A: Order By Queue / Distribution (Ventor Style) -->
+      <div class="analytics-card">
+        <div class="card-headline-row">
+          <h2 class="card-headline">Queue Distribution</h2>
+          <span class="card-headline-badge">Live Share</span>
+        </div>
+
+        <div class="distribution-content">
+          <div class="bars-list">
+            <div class="bar-item">
+              <div class="bar-item-header">
+                <div class="bar-item-dot-label">
+                  <span class="bar-dot" style="background: #10b981;"></span>
+                  <span>Design Queue</span>
+                </div>
+                <span class="bar-pct-val" id="bar-design-pct">--%</span>
+              </div>
+              <div class="mini-track">
+                <div class="mini-fill" id="fill-design" style="background: #10b981; width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="bar-item">
+              <div class="bar-item-header">
+                <div class="bar-item-dot-label">
+                  <span class="bar-dot" style="background: #0ea5e9;"></span>
+                  <span>Approval Queue</span>
+                </div>
+                <span class="bar-pct-val" id="bar-approval-pct">--%</span>
+              </div>
+              <div class="mini-track">
+                <div class="mini-fill" id="fill-approval" style="background: #0ea5e9; width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="bar-item">
+              <div class="bar-item-header">
+                <div class="bar-item-dot-label">
+                  <span class="bar-dot" style="background: #f59e0b;"></span>
+                  <span>Locked (Hold)</span>
+                </div>
+                <span class="bar-pct-val" id="bar-locked-pct">--%</span>
+              </div>
+              <div class="mini-track">
+                <div class="mini-fill" id="fill-locked" style="background: #f59e0b; width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="bar-item">
+              <div class="bar-item-header">
+                <div class="bar-item-dot-label">
+                  <span class="bar-dot" style="background: #8b5cf6;"></span>
+                  <span>Open (Ready)</span>
+                </div>
+                <span class="bar-pct-val" id="bar-open-pct">--%</span>
+              </div>
+              <div class="mini-track">
+                <div class="mini-fill" id="fill-open" style="background: #8b5cf6; width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Donut Ring Gauge Chart -->
+          <div class="donut-wrap">
+            <svg class="donut-svg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="12" />
+              <!-- Design Segment (Emerald) -->
+              <circle id="donut-segment-design" cx="50" cy="50" r="38" fill="none" stroke="#10b981" stroke-width="12" stroke-dasharray="0 238.76" stroke-dashoffset="0" style="transition: stroke-dasharray 0.5s ease;" />
+              <!-- Approval Segment (Cyan) -->
+              <circle id="donut-segment-approval" cx="50" cy="50" r="38" fill="none" stroke="#0ea5e9" stroke-width="12" stroke-dasharray="0 238.76" stroke-dashoffset="0" style="transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease;" />
+              <!-- Locked Segment (Amber) -->
+              <circle id="donut-segment-locked" cx="50" cy="50" r="38" fill="none" stroke="#f59e0b" stroke-width="12" stroke-dasharray="0 238.76" stroke-dashoffset="0" style="transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease;" />
+            </svg>
+            <div class="donut-center-text">
+              <span class="donut-center-sub">Total Orders</span>
+              <span class="donut-center-val" id="donut-total">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card B: Order Overview Activity Waves & Bars (Ventor Style) -->
+      <div class="analytics-card">
+        <div class="card-headline-row">
+          <h2 class="card-headline">Order Velocity & Flow</h2>
+          <span class="card-headline-badge">Hourly Monitoring</span>
+        </div>
+
+        <div class="velocity-chart-wrap">
+          <svg viewBox="0 0 600 160" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <!-- Grid Lines -->
+            <line x1="40" y1="20" x2="580" y2="20" stroke="rgba(255,255,255,0.04)" stroke-dasharray="4 4" />
+            <line x1="40" y1="60" x2="580" y2="60" stroke="rgba(255,255,255,0.04)" stroke-dasharray="4 4" />
+            <line x1="40" y1="100" x2="580" y2="100" stroke="rgba(255,255,255,0.04)" stroke-dasharray="4 4" />
+            <line x1="40" y1="140" x2="580" y2="140" stroke="rgba(255,255,255,0.08)" />
+
+            <!-- Vertical Activity Pill Bars -->
+            <rect x="70" y="80" width="16" height="60" rx="8" fill="#0284c7" opacity="0.8" />
+            <rect x="150" y="55" width="16" height="85" rx="8" fill="#0284c7" opacity="0.8" />
+            <rect x="230" y="70" width="16" height="70" rx="8" fill="#0284c7" opacity="0.8" />
+            <rect x="310" y="40" width="16" height="100" rx="8" fill="#0ea5e9" opacity="0.9" />
+            <rect x="390" y="50" width="16" height="90" rx="8" fill="#0284c7" opacity="0.8" />
+            <rect x="470" y="30" width="16" height="110" rx="8" fill="#10b981" opacity="0.95" />
+            <rect x="540" y="45" width="16" height="95" rx="8" fill="#0284c7" opacity="0.8" />
+
+            <!-- Wave Area & Stroke -->
+            <path d="M 78 85 Q 158 45 238 65 T 398 50 T 478 25 T 548 40 L 548 140 L 78 140 Z" fill="url(#waveGrad)" />
+            <path d="M 78 85 Q 158 45 238 65 T 398 50 T 478 25 T 548 40" fill="none" stroke="#38bdf8" stroke-width="3" />
+
+            <!-- Glowing Nodes -->
+            <circle cx="78" cy="85" r="4" fill="#38bdf8" />
+            <circle cx="158" cy="55" r="4" fill="#38bdf8" />
+            <circle cx="238" cy="65" r="4" fill="#38bdf8" />
+            <circle cx="318" cy="45" r="5" fill="#38bdf8" stroke="#ffffff" stroke-width="2" />
+            <circle cx="398" cy="50" r="4" fill="#38bdf8" />
+            <circle cx="478" cy="25" r="6" fill="#10b981" stroke="#ffffff" stroke-width="2" />
+            <circle cx="548" cy="40" r="4" fill="#38bdf8" />
+
+            <!-- Tooltip Pill over Active Peak -->
+            <g transform="translate(425, 2)">
+              <rect width="105" height="22" rx="6" fill="#090d16" stroke="#10b981" stroke-width="1.5" />
+              <text x="52" y="15" fill="#34d399" font-size="10" font-weight="700" text-anchor="middle">Peak Flow: Real-time</text>
+            </g>
+
+            <!-- Bottom Time Axis Labels -->
+            <text x="78" y="155" fill="#64748b" font-size="10" text-anchor="middle">9 AM</text>
+            <text x="158" y="155" fill="#64748b" font-size="10" text-anchor="middle">10 AM</text>
+            <text x="238" y="155" fill="#64748b" font-size="10" text-anchor="middle">11 AM</text>
+            <text x="318" y="155" fill="#64748b" font-size="10" text-anchor="middle">12 PM</text>
+            <text x="398" y="155" fill="#64748b" font-size="10" text-anchor="middle">1 PM</text>
+            <text x="478" y="155" fill="#64748b" font-size="10" text-anchor="middle">2 PM</text>
+            <text x="548" y="155" fill="#64748b" font-size="10" text-anchor="middle">NOW</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. DETAILED QUEUE CARDS (APPROVAL & DESIGN) -->
+    <section class="queues-row">
+      <!-- Card 1: Approval Queue -->
+      <div class="queue-detailed-card approval" id="approval-card">
+        <div class="card-meta-head">
+          <div class="card-title-badge-group">
+            <h3 class="queue-card-name">Approval</h3>
+            <span class="queue-category-tag">Client Signoff</span>
+          </div>
+          <div class="queue-total-pill">Total: <span id="app-total">--</span></div>
+        </div>
+
+        <div class="dual-metric-boxes">
+          <div class="metric-brick locked">
+            <div class="metric-brick-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>LOCKED</span>
+            </div>
+            <div class="metric-brick-digit" id="app-locked">--</div>
+            <div class="metric-brick-desc">In Review / Hold</div>
+          </div>
+
+          <div class="metric-brick open">
+            <div class="metric-brick-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+              </svg>
+              <span>OPEN</span>
+            </div>
+            <div class="metric-brick-digit" id="app-open">--</div>
+            <div class="metric-brick-desc">Ready to Action</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Design Queue -->
+      <div class="queue-detailed-card design" id="design-card">
+        <div class="card-meta-head">
+          <div class="card-title-badge-group">
+            <h3 class="queue-card-name">Design</h3>
+            <span class="queue-category-tag">Artwork Queue</span>
+          </div>
+          <div class="queue-total-pill">Total: <span id="queue-total">--</span></div>
+        </div>
+
+        <div class="dual-metric-boxes">
+          <div class="metric-brick locked">
+            <div class="metric-brick-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>LOCKED</span>
+            </div>
+            <div class="metric-brick-digit" id="queue-locked">--</div>
+            <div class="metric-brick-desc">Claimed by Designers</div>
+          </div>
+
+          <div class="metric-brick open">
+            <div class="metric-brick-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+              </svg>
+              <span>OPEN</span>
+            </div>
+            <div class="metric-brick-digit" id="queue-open">--</div>
+            <div class="metric-brick-desc">Unassigned Orders</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. BOTTOM STATUS BAR -->
+    <footer class="bottom-bar">
+      <div class="bottom-left">
+        <button class="refresh-pill-btn" onclick="triggerManualRefresh()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+          </svg>
+          <span>Refresh Now</span>
+        </button>
+        <span id="footer-sync-time">Live Sync Active</span>
+      </div>
+      <div>
+        <span>NBERM Enterprise Dashboard • Shortcuts: [R] Refresh [F] Fullscreen</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let hasReceivedData = false;
+    let prevLockedCount = -1;
+    let soundEnabled = localStorage.getItem('nberm_sound') === 'true';
+
+    // --- Audio alert synth chime ---
+    function playChime() {
+      if (!soundEnabled) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      localStorage.setItem('nberm_sound', soundEnabled ? 'true' : 'false');
+      const btn = document.getElementById('sound-btn');
+      if (btn) btn.style.color = soundEnabled ? '#34d399' : '#94a3b8';
+      if (soundEnabled) playChime();
+    }
+
+    if (soundEnabled) {
+      const btn = document.getElementById('sound-btn');
+      if (btn) btn.style.color = '#34d399';
+    }
+
+    // --- Fullscreen toggle ---
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'r' || e.key === 'R') triggerManualRefresh();
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+    });
+
+    function scrollToElement(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // --- RENDER FUNCTION ---
+    function renderStats(data) {
+      if (!data) return;
+      hasReceivedData = true;
+
+      let appTotal = 0, appLocked = 0, appOpen = 0;
+      let qTotal = 0, qLocked = 0, qOpen = 0;
+
+      if (data.approval && data.queue) {
+        appTotal = Number(data.approval.total ?? 0);
+        appLocked = Number(data.approval.locked ?? 0);
+        appOpen = Number(data.approval.unlocked ?? Math.max(0, appTotal - appLocked));
+
+        qTotal = Number(data.queue.total ?? 0);
+        qLocked = Number(data.queue.locked ?? 0);
+        qOpen = Number(data.queue.unlocked ?? Math.max(0, qTotal - qLocked));
+      } else {
+        appTotal = Number(data.total || data.count || 0);
+        appLocked = Number(data.locked || 0);
+        appOpen = Number(data.unlocked || Math.max(0, appTotal - appLocked));
+      }
+
+      const totalWorkload = appTotal + qTotal;
+      const totalLocked = appLocked + qLocked;
+      const totalOpen = appOpen + qOpen;
+
+      if (prevLockedCount !== -1 && totalLocked > prevLockedCount) {
+        playChime();
+      }
+      prevLockedCount = totalLocked;
+
+      // 1. Top 4 KPI Cards
+      document.getElementById('kpi-total').innerText = totalWorkload;
+      document.getElementById('kpi-locked').innerText = totalLocked;
+      document.getElementById('kpi-open').innerText = totalOpen;
+
+      const lockedPct = totalWorkload > 0 ? Math.round((totalLocked / totalWorkload) * 100) : 0;
+      const openPct = 100 - lockedPct;
+      document.getElementById('kpi-locked-trend').innerText = `↗ ${lockedPct}% Locked`;
+      document.getElementById('kpi-open-trend').innerText = `↗ ${openPct}% Open`;
+
+      // Ratio text
+      const designPct = totalWorkload > 0 ? Math.round((qTotal / totalWorkload) * 100) : 50;
+      const appPct = 100 - designPct;
+      document.getElementById('kpi-ratio').innerText = `${designPct}% / ${appPct}%`;
+
+      // 2. Distribution Bars
+      document.getElementById('bar-design-pct').innerText = `${designPct}%`;
+      document.getElementById('fill-design').style.width = `${designPct}%`;
+
+      document.getElementById('bar-approval-pct').innerText = `${appPct}%`;
+      document.getElementById('fill-approval').style.width = `${appPct}%`;
+
+      document.getElementById('bar-locked-pct').innerText = `${lockedPct}%`;
+      document.getElementById('fill-locked').style.width = `${lockedPct}%`;
+
+      document.getElementById('bar-open-pct').innerText = `${openPct}%`;
+      document.getElementById('fill-open').style.width = `${openPct}%`;
+
+      // 3. SVG Donut Gauge Chart
+      const circumference = 2 * Math.PI * 38; // ~238.76
+      const designLen = (designPct / 100) * circumference;
+      const appLen = (appPct / 100) * circumference;
+      const lockedLen = (lockedPct / 100) * circumference;
+
+      const segDesign = document.getElementById('donut-segment-design');
+      const segApp = document.getElementById('donut-segment-approval');
+      const segLocked = document.getElementById('donut-segment-locked');
+
+      if (segDesign) {
+        segDesign.style.strokeDasharray = `${designLen} ${circumference}`;
+      }
+      if (segApp) {
+        segApp.style.strokeDasharray = `${appLen} ${circumference}`;
+        segApp.style.strokeDashoffset = `-${designLen}`;
+      }
+      if (segLocked) {
+        segLocked.style.strokeDasharray = `${lockedLen} ${circumference}`;
+        segLocked.style.strokeDashoffset = `-${designLen + appLen}`;
+      }
+      document.getElementById('donut-total').innerText = totalWorkload;
+
+      // 4. Approval Detailed Card
+      document.getElementById('app-total').innerText = appTotal;
+      document.getElementById('app-locked').innerText = appLocked;
+      document.getElementById('app-open').innerText = appOpen;
+
+      // 5. Design Detailed Card
+      document.getElementById('queue-total').innerText = qTotal;
+      document.getElementById('queue-locked').innerText = qLocked;
+      document.getElementById('queue-open').innerText = qOpen;
+
+      // 6. Timestamp
+      if (data.timestamp) {
+        const diffSec = Math.max(0, Math.round((Date.now() - data.timestamp) / 1000));
+        let timeTxt = 'Synced just now';
+        if (diffSec >= 5 && diffSec < 60) timeTxt = `Synced ${diffSec}s ago`;
+        else if (diffSec >= 60) {
+          timeTxt = `Updated ${new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        document.getElementById('sync-time-badge').innerText = timeTxt;
+        document.getElementById('footer-sync-time').innerText = timeTxt;
+      }
+    }
+
+    // --- FETCH FROM API ---
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/orders?t=' + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          renderStats(data);
+          return;
+        }
+      } catch (e) {}
+
+      if (!hasReceivedData) {
+        document.getElementById('sync-time-badge').innerText = 'Connecting to Chrome extension...';
+      }
+    }
+
+    function triggerManualRefresh() {
+      const btn = document.getElementById('refresh-icon-btn');
+      if (btn) btn.classList.add('rotating');
+      loadStatus().finally(() => {
+        setTimeout(() => {
+          if (btn) btn.classList.remove('rotating');
+        }, 600);
+      });
+    }
+
+    loadStatus();
+    setInterval(loadStatus, 2500);
+
+    // --- SERVICE WORKER ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

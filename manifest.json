@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "3 - NBERM Phone Sync",
+  "version": "1.0.3",
+  "description": "Live queue and locked orders sync to phone dashboard.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.vercel.app/*",
+    "https://*.nberm.com/*",
+    "http://*.nberm.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://nberm.com/administrator/*",
+        "http://nberm.com/administrator/*",
+        "*://*.nberm.com/administrator/*"
+      ],
+      "js": ["sync.js"],
+      "run_at": "document_end"
+    }
+  ]
+}

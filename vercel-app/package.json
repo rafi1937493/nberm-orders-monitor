@@ -1,0 +1,12 @@
+{
+  "name": "nberm-orders-monitor",
+  "version": "1.0.0",
+  "description": "Live mobile orders counter deployed on Vercel",
+  "type": "module",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.3"
+  }
+}
