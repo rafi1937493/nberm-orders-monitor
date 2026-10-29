@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
 
-  <title>NBERM Dashboard • Live Orders Monitor</title>
+  <title>NBERM Dashboard &bull; Live Orders Monitor</title>
 
   <style>
     :root {
@@ -819,7 +819,7 @@
         </div>
         <div class="kpi-body">
           <div class="kpi-number" id="kpi-total">--</div>
-          <div class="kpi-trend emerald">↗ 100% Active</div>
+          <div class="kpi-trend emerald"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 3px;"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>100% Active</div>
         </div>
       </div>
 
@@ -836,7 +836,7 @@
         </div>
         <div class="kpi-body">
           <div class="kpi-number" id="kpi-locked" style="color: #fef08a;">--</div>
-          <div class="kpi-trend amber" id="kpi-locked-trend">↗ --% Locked</div>
+          <div class="kpi-trend amber" id="kpi-locked-trend"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 3px;"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>--% Locked</div>
         </div>
       </div>
 
@@ -853,7 +853,7 @@
         </div>
         <div class="kpi-body">
           <div class="kpi-number" id="kpi-open" style="color: #a7f3d0;">--</div>
-          <div class="kpi-trend emerald" id="kpi-open-trend">↗ --% Open</div>
+          <div class="kpi-trend emerald" id="kpi-open-trend"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 3px;"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>--% Open</div>
         </div>
       </div>
 
@@ -964,7 +964,7 @@
         <div class="card-headline-row">
           <div style="display: flex; align-items: center; gap: 8px;">
             <h2 class="card-headline">Live Queue Timeline</h2>
-            <span class="card-headline-badge" id="flow-status-badge">● Real-time Flow</span>
+            <span class="card-headline-badge" id="flow-status-badge"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;margin-right:6px;box-shadow:0 0 6px rgba(56,189,248,0.6);"></span>Real-time Flow</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="card-headline-badge" style="color: #38bdf8;" id="peak-workload-badge">Peak: --</span>
@@ -1087,7 +1087,7 @@
         <span id="footer-sync-time">Live Sync Active</span>
       </div>
       <div>
-        <span>NBERM Enterprise Dashboard • Shortcuts: [R] Refresh [F] Fullscreen</span>
+        <span>NBERM Enterprise Dashboard &bull; Shortcuts: [R] Refresh [F] Fullscreen</span>
       </div>
     </footer>
   </div>
@@ -1222,13 +1222,13 @@
       const delta = currentPt.total - firstPt.total;
       const statusBadge = document.getElementById('flow-status-badge');
       if (delta < 0) {
-        statusBadge.innerText = `🟢 Draining (${delta})`;
+        statusBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;margin-right:6px;box-shadow:0 0 6px rgba(52,211,153,0.6);"></span>Draining (${delta})`;
         statusBadge.style.color = '#34d399';
       } else if (delta > 0) {
-        statusBadge.innerText = `🟡 Inflow (+${delta})`;
+        statusBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fbbf24;margin-right:6px;box-shadow:0 0 6px rgba(251,191,36,0.6);"></span>Inflow (+${delta})`;
         statusBadge.style.color = '#fbbf24';
       } else {
-        statusBadge.innerText = `● Steady Flow (${currentPt.total})`;
+        statusBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#38bdf8;margin-right:6px;box-shadow:0 0 6px rgba(56,189,248,0.6);"></span>Steady Flow (${currentPt.total})`;
         statusBadge.style.color = '#38bdf8';
       }
 
@@ -1330,7 +1330,7 @@
           const total = pt.getAttribute('data-total');
           const locked = pt.getAttribute('data-locked');
           const time = pt.getAttribute('data-time');
-          tooltip.innerHTML = `<span style="color:#38bdf8;">${time}</span>: <strong>${total} Total</strong> • <span style="color:#fbbf24;">${locked} Locked</span>`;
+          tooltip.innerHTML = `<span style="color:#38bdf8;">${time}</span>: <strong>${total} Total</strong> &bull; <span style="color:#fbbf24;">${locked} Locked</span>`;
           tooltip.style.display = 'block';
           
           const rect = pt.getBoundingClientRect();
@@ -1382,8 +1382,9 @@
 
       const lockedPct = totalWorkload > 0 ? Math.round((totalLocked / totalWorkload) * 100) : 0;
       const openPct = 100 - lockedPct;
-      document.getElementById('kpi-locked-trend').innerText = `↗ ${lockedPct}% Locked`;
-      document.getElementById('kpi-open-trend').innerText = `↗ ${openPct}% Open`;
+      const trendSvg = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 3px;"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>`;
+      document.getElementById('kpi-locked-trend').innerHTML = `${trendSvg}${lockedPct}% Locked`;
+      document.getElementById('kpi-open-trend').innerHTML = `${trendSvg}${openPct}% Open`;
 
       // Ratio text
       const designPct = totalWorkload > 0 ? Math.round((qTotal / totalWorkload) * 100) : 50;
