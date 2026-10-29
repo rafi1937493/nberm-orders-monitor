@@ -1521,17 +1521,19 @@
       let qTotal = 0, qLocked = 0, qOpen = 0;
 
       if (data.approval && data.queue) {
-        appTotal = Number(data.approval.total ?? 0);
-        appLocked = Number(data.approval.locked ?? 0);
-        appOpen = Number(data.approval.unlocked ?? Math.max(0, appTotal - appLocked));
+        appTotal = Math.max(0, Number(data.approval.total ?? 0));
+        appLocked = Math.min(appTotal, Math.max(0, Number(data.approval.locked ?? 0)));
+        appOpen = Math.max(0, appTotal - appLocked);
 
-        qTotal = Number(data.queue.total ?? 0);
-        qLocked = Number(data.queue.locked ?? 0);
-        qOpen = Number(data.queue.unlocked ?? Math.max(0, qTotal - qLocked));
+        qTotal = Math.max(0, Number(data.queue.total ?? 0));
+        qLocked = Math.min(qTotal, Math.max(0, Number(data.queue.locked ?? 0)));
+        qOpen = Math.max(0, qTotal - qLocked);
       } else {
-        appTotal = Number(data.total || data.count || 0);
-        appLocked = Number(data.locked || 0);
-        appOpen = Number(data.unlocked || Math.max(0, appTotal - appLocked));
+        const rawT = Math.max(0, Number(data.total || data.count || 0));
+        const rawL = Math.min(rawT, Math.max(0, Number(data.locked || 0)));
+        appTotal = rawT;
+        appLocked = rawL;
+        appOpen = Math.max(0, appTotal - appLocked);
       }
 
       const totalWorkload = appTotal + qTotal;

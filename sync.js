@@ -82,12 +82,20 @@
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // 1. Detect Total and Range from Pagination Footer
+    // Scope to the specific queue tab container
+    // For 'queue' (Production Designs Queue), Joomla places the main Requests tab inside '#unassigned-page'
+    // Other tabs on that page are Escalated ('#escalated-page') and Embroidery ('#embroidery-page')
+    let scopeContainer = doc;
+    if (queueName === 'queue') {
+      scopeContainer = doc.getElementById('unassigned-page') || doc.querySelector('.tab-page') || doc;
+    }
+
+    // 1. Detect Total and Range from Pagination Footer inside scopeContainer
     let total = null;
     let rangeStart = 0;
     let rangeEnd = 0;
 
-    const footerEls = doc.querySelectorAll('.sectiontablefooter, #listfooter, select[name="limit"], .page-nav, .pagenav');
+    const footerEls = scopeContainer.querySelectorAll('.sectiontablefooter, #listfooter, select[name="limit"], .page-nav, .pagenav');
     for (const el of footerEls) {
       const parentRow = el.closest('tr') || el.parentElement;
       const txt = parentRow ? parentRow.textContent : el.textContent;
@@ -101,44 +109,65 @@
     }
 
     if (total == null) {
-      const bodyTxt = doc.body ? (doc.body.textContent || '') : '';
-      const m = bodyTxt.match(/Results\s+(\d+)\s*-\s*(\d+)\s+of\s+([\d,]+)/i);
+      const containerTxt = scopeContainer.textContent || '';
+      const m = containerTxt.match(/Results\s+(\d+)\s*-\s*(\d+)\s+of\s+([\d,]+)/i);
       if (m) {
         rangeStart = parseInt(m[1], 10);
         rangeEnd = parseInt(m[2], 10);
         total = parseInt(m[3].replace(/,/g, ''), 10);
-      } else if (bodyTxt.includes('No records found')) {
+      } else if (containerTxt.includes('No records found')) {
         total = 0;
       }
     }
 
-    // 2. Count locked orders from order table rows
+    // 2. Count locked orders strictly within the orders list table inside scopeContainer
     const lockedIds = new Set();
     let fallbackLockCount = 0;
 
-    // Select all rows inside list tables
-    const rows = doc.querySelectorAll('table.adminlist tbody tr, table.adminlist tr, .adminlist tr, table tr');
+    // Target the table containing orders
+    const table = scopeContainer.querySelector('table.adminlist') || scopeContainer.querySelector('table');
+    const rows = table ? table.querySelectorAll('tbody > tr, tr') : [];
+
     for (const tr of rows) {
-      // Exclude navigation, toolbars, headers
+      // Exclude navigation, toolbars, headers, footers
       if (tr.closest('thead') || tr.closest('tfoot') || tr.closest('#toolbar') || tr.closest('.toolbar')) continue;
       if (tr.querySelector('th')) continue;
+      if (tr.classList.contains('sectiontableheader') || tr.classList.contains('title')) continue;
+      if (tr.querySelector('.sectiontablefooter, #listfooter, .pagenav, select[name="limit"]')) continue;
 
       // Check for lock / checked_out icons inside this row
-      const lockImg = tr.querySelector('img[src*="checked_out"], img[src*="padlock"], img[alt*="Check" i], img[alt*="Lock" i]');
+      const lockImg = tr.querySelector('img[src*="checked_out"], img[src*="padlock"], img[alt*="Checked out" i], img[title*="Checked out" i], img[alt*="Locked" i], img[title*="Locked" i]');
       if (lockImg) {
         // Skip queue-lock buttons or toolbar buttons
         if (lockImg.getAttribute('name') === 'lockqueue' || lockImg.closest('#toolbar')) continue;
 
-        // Extract row order identifier (checkbox value `cid[]`, order link ID, or row text)
-        const cb = tr.querySelector('input[type="checkbox"][name*="cid"], input[type="checkbox"][name*="id"], input[type="checkbox"][value]');
-        const link = tr.querySelector('a[href*="id="], a[href*="order_id="]');
+        // Extract unique order identifier
         let orderId = null;
 
+        // A. From checkbox cid[]
+        const cb = tr.querySelector('input[type="checkbox"][name*="cid"], input[type="checkbox"][name*="id"], input[type="checkbox"][value]');
         if (cb && cb.value && cb.value !== '0' && cb.value !== 'on') {
           orderId = cb.value.trim();
-        } else if (link && link.href) {
-          const match = link.href.match(/[?&](?:id|order_id)=(\d+)/i);
-          if (match) orderId = match[1];
+        }
+
+        // B. From link href (supports alphanumeric IDs like W3886096B)
+        if (!orderId) {
+          const links = tr.querySelectorAll('a[href]');
+          for (const link of links) {
+            const m = link.href.match(/[?&](?:id|order_id|order|orderno|req|reqid|cid\[\])=([a-zA-Z0-9_-]+)/i);
+            if (m) {
+              orderId = m[1];
+              break;
+            }
+          }
+        }
+
+        // C. Alphanumeric order number pattern in row text (e.g. W3886096B)
+        if (!orderId) {
+          const orderNumMatch = (tr.textContent || '').match(/\b([A-Z]\d{6,8}[A-Z]?)\b/);
+          if (orderNumMatch) {
+            orderId = orderNumMatch[1];
+          }
         }
 
         if (orderId) {
@@ -149,7 +178,10 @@
       }
     }
 
-    const finalLockedCount = lockedIds.size > 0 ? (lockedIds.size + fallbackLockCount) : fallbackLockCount;
+    let finalLockedCount = lockedIds.size > 0 ? (lockedIds.size + fallbackLockCount) : fallbackLockCount;
+    if (total != null) {
+      finalLockedCount = Math.min(total, finalLockedCount);
+    }
 
     return {
       total: total,
@@ -208,7 +240,8 @@
       // Check if page 1 returned all rows (e.g. rangeEnd >= totalCount or totalCount <= 100)
       if (page1.rangeEnd >= totalCount || page1.rangeEnd === 0 || totalCount <= PAGE_SIZE) {
         // All rows were returned in page 1!
-        const totalLocked = allLockedIds.size > 0 ? (allLockedIds.size + totalFallbackLocks) : page1.lockedCount;
+        const rawLocked = allLockedIds.size > 0 ? (allLockedIds.size + totalFallbackLocks) : page1.lockedCount;
+        const totalLocked = Math.min(totalCount, Math.max(0, rawLocked));
         const result = {
           total: totalCount,
           locked: totalLocked,
@@ -280,7 +313,8 @@
         fetch(`${baseUrl}&limit=100&limitstart=0`, { credentials: 'include' }).catch(() => {});
       } catch (e) {}
 
-      const finalLockedTotal = allLockedIds.size > 0 ? (allLockedIds.size + totalFallbackLocks) : (page1.lockedCount + totalFallbackLocks);
+      const rawLockedTotal = allLockedIds.size > 0 ? (allLockedIds.size + totalFallbackLocks) : (page1.lockedCount + totalFallbackLocks);
+      const finalLockedTotal = Math.min(totalCount, Math.max(0, rawLockedTotal));
       const stats = {
         total: totalCount,
         locked: finalLockedTotal,
@@ -332,13 +366,13 @@
     const appBaseline = parseInt(localStorage.getItem(BASELINE_KEY_APPROVAL) || '231', 10);
     const qBaseline = parseInt(localStorage.getItem(BASELINE_KEY_QUEUE) || '186', 10);
 
-    const appTotal = approval ? approval.total : appBaseline;
-    const appLocked = approval ? approval.locked : 0;
-    const appOpen = approval ? approval.unlocked : Math.max(0, appTotal - appLocked);
+    const appTotal = Math.max(0, approval ? approval.total : appBaseline);
+    const appLocked = Math.min(appTotal, Math.max(0, approval ? approval.locked : 0));
+    const appOpen = Math.max(0, appTotal - appLocked);
 
-    const qTotal = queue ? queue.total : qBaseline;
-    const qLocked = queue ? queue.locked : 0;
-    const qOpen = queue ? queue.unlocked : Math.max(0, qTotal - qLocked);
+    const qTotal = Math.max(0, queue ? queue.total : qBaseline);
+    const qLocked = Math.min(qTotal, Math.max(0, queue ? queue.locked : 0));
+    const qOpen = Math.max(0, qTotal - qLocked);
 
     const stateKey = `${appTotal}-${appLocked}-${appOpen}|${qTotal}-${qLocked}-${qOpen}`;
     const now = Date.now();

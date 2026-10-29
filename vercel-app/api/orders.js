@@ -35,24 +35,24 @@ export default async function handler(req, res) {
         prevData = global.__nberm_orders || null;
       }
 
-      let appTotal = Number(body?.approval?.total ?? 0);
-      let appLocked = Number(body?.approval?.locked ?? 0);
-      let appOpen = body?.approval?.unlocked != null ? Number(body.approval.unlocked) : Math.max(0, appTotal - appLocked);
+      let appTotal = Math.max(0, Number(body?.approval?.total ?? 0));
+      let appLocked = Math.min(appTotal, Math.max(0, Number(body?.approval?.locked ?? 0)));
+      let appOpen = Math.max(0, appTotal - appLocked);
 
-      let qTotal = Number(body?.queue?.total ?? 0);
-      let qLocked = Number(body?.queue?.locked ?? 0);
-      let qOpen = body?.queue?.unlocked != null ? Number(body.queue.unlocked) : Math.max(0, qTotal - qLocked);
+      let qTotal = Math.max(0, Number(body?.queue?.total ?? 0));
+      let qLocked = Math.min(qTotal, Math.max(0, Number(body?.queue?.locked ?? 0)));
+      let qOpen = Math.max(0, qTotal - qLocked);
 
       // Merge: if one queue reported 0 or missing, preserve previous non-zero count
       if (appTotal === 0 && prevData?.approval?.total > 0) {
-        appTotal = Number(prevData.approval.total);
-        appLocked = Number(prevData.approval.locked ?? 0);
-        appOpen = Number(prevData.approval.unlocked ?? (appTotal - appLocked));
+        appTotal = Math.max(0, Number(prevData.approval.total));
+        appLocked = Math.min(appTotal, Math.max(0, Number(prevData.approval.locked ?? 0)));
+        appOpen = Math.max(0, appTotal - appLocked);
       }
       if (qTotal === 0 && prevData?.queue?.total > 0) {
-        qTotal = Number(prevData.queue.total);
-        qLocked = Number(prevData.queue.locked ?? 0);
-        qOpen = Number(prevData.queue.unlocked ?? (qTotal - qLocked));
+        qTotal = Math.max(0, Number(prevData.queue.total));
+        qLocked = Math.min(qTotal, Math.max(0, Number(prevData.queue.locked ?? 0)));
+        qOpen = Math.max(0, qTotal - qLocked);
       }
 
       const total = appTotal + qTotal;
@@ -124,6 +124,32 @@ export default async function handler(req, res) {
           updatedAt: 'Synced',
           timestamp: Date.now()
         };
+      }
+
+      // Sanitize data so locked never exceeds total
+      if (data) {
+        if (data.approval) {
+          const aTotal = Math.max(0, Number(data.approval.total ?? 0));
+          const aLocked = Math.min(aTotal, Math.max(0, Number(data.approval.locked ?? 0)));
+          data.approval.total = aTotal;
+          data.approval.locked = aLocked;
+          data.approval.unlocked = Math.max(0, aTotal - aLocked);
+        }
+        if (data.queue) {
+          const qTotal = Math.max(0, Number(data.queue.total ?? 0));
+          const qLocked = Math.min(qTotal, Math.max(0, Number(data.queue.locked ?? 0)));
+          data.queue.total = qTotal;
+          data.queue.locked = qLocked;
+          data.queue.unlocked = Math.max(0, qTotal - qLocked);
+        }
+        const appT = data.approval ? data.approval.total : 0;
+        const appL = data.approval ? data.approval.locked : 0;
+        const qT = data.queue ? data.queue.total : 0;
+        const qL = data.queue ? data.queue.locked : 0;
+        data.total = appT + qT;
+        data.count = data.total;
+        data.locked = appL + qL;
+        data.unlocked = Math.max(0, data.total - data.locked);
       }
 
       return res.status(200).json(data);
