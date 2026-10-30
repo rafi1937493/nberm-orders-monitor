@@ -1,5 +1,5 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.0.6)
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.0.7)
  * - Continuous Background Syncing (Even when PC is locked / Win + L):
  *   1. Dedicated Web Worker + Chrome Alarms: Heartbeat continues running while Windows is locked.
  *   2. Active Background Fetch: Refreshes queue data from server when screen is locked and DOM is idle.
@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '1.0.6';
+  const VERSION = '1.0.7';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
