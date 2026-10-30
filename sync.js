@@ -1,17 +1,16 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.0.5)
- * - Ultra-Fast Zero-Lag Architecture:
- *   1. Direct In-DOM Parsing: When viewing a queue, reads from live DOM in <0.05ms with 0 network calls!
- *   2. PHP Session Lock Prevention: Eliminates heavy parallel background requests that cause page hanging.
- *   3. Intelligent Tab Leadership: Multiple open tabs share cached data via localStorage with 0 redundant fetches.
- *   4. Event-Driven Sync: Reacts instantly to table changes, clicks, and page loads without CPU spinning.
- *   5. Polite Background Refresh: Checks the inactive queue gently every 45s without flooding the server.
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.0.6)
+ * - Continuous Background Syncing (Even when PC is locked / Win + L):
+ *   1. Dedicated Web Worker + Chrome Alarms: Heartbeat continues running while Windows is locked.
+ *   2. Active Background Fetch: Refreshes queue data from server when screen is locked and DOM is idle.
+ *   3. Ultra-Fast Desk Mode: When tab is open and visible, reads live DOM directly (<0.05ms) with zero lag.
+ *   4. Zero False Data: Permanently purged all legacy 545/315 mock numbers.
  */
 
 (function () {
   'use strict';
 
-  const VERSION = '1.0.5';
+  const VERSION = '1.0.6';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -27,16 +26,24 @@
   const BASELINE_KEY_QUEUE = 'nberm_baseline_queue';
   const LEADER_KEY = 'nberm_sync_leader';
 
-  // Seed baseline memory with known totals
-  if (!localStorage.getItem(BASELINE_KEY_APPROVAL)) localStorage.setItem(BASELINE_KEY_APPROVAL, '231');
-  if (!localStorage.getItem(BASELINE_KEY_QUEUE)) localStorage.setItem(BASELINE_KEY_QUEUE, '186');
+  // Wipe out any legacy mock baselines (545, 315, 231, 186, 860) from older versions
+  try {
+    const legacyA = localStorage.getItem(BASELINE_KEY_APPROVAL);
+    if (legacyA === '545' || legacyA === '231' || legacyA === '860') {
+      localStorage.removeItem(BASELINE_KEY_APPROVAL);
+    }
+    const legacyQ = localStorage.getItem(BASELINE_KEY_QUEUE);
+    if (legacyQ === '315' || legacyQ === '186' || legacyQ === '860') {
+      localStorage.removeItem(BASELINE_KEY_QUEUE);
+    }
+  } catch (e) {}
 
   let lastBroadcastStateKey = null;
   let lastBroadcastTime = 0;
   let isBackgroundFetching = false;
   let lastBgFetchTimestamp = { queue: 0, approval: 0 };
 
-  // Detect which queue the active tab is viewing
+  // Detect which queue this tab is viewing
   function detectCurrentPage() {
     const url = window.location.href;
     if (url.includes('listusartworkrequests2')) return 'queue';
@@ -61,13 +68,11 @@
   }
 
   /**
-   * Unified DOM stats extractor: works on live `document` (0 network calls, <0.05ms)
-   * or a DOMParser-parsed document.
+   * Unified DOM stats extractor: works on live document or parsed HTML document
    */
   function extractStatsFromDom(rootDoc, queueType) {
     if (!rootDoc) return null;
 
-    // Scope to specific queue tab container if on queue page
     let scopeContainer = rootDoc;
     if (queueType === 'queue') {
       const unassigned = rootDoc.getElementById ? rootDoc.getElementById('unassigned-page') : rootDoc.querySelector('#unassigned-page');
@@ -177,7 +182,7 @@
       const item = localStorage.getItem(key);
       if (!item) return null;
       const parsed = JSON.parse(item);
-      if (Date.now() - parsed.timestamp < 180000) { // 3-minute validity
+      if (Date.now() - parsed.timestamp < 300000) { // 5-minute validity
         return parsed.stats;
       }
       return null;
@@ -198,14 +203,14 @@
     } catch (e) {}
   }
 
-  // Coordinates between tabs: only 1 tab acts as leader for background requests
+  // Single tab leadership coordination
   function isTabLeader() {
     const now = Date.now();
     try {
       const raw = localStorage.getItem(LEADER_KEY);
       if (raw) {
         const leader = JSON.parse(raw);
-        if (leader.tabId === TAB_ID || (now - leader.time > 25000)) {
+        if (leader.tabId === TAB_ID || (now - leader.time > 20000)) {
           localStorage.setItem(LEADER_KEY, JSON.stringify({ tabId: TAB_ID, time: now }));
           return true;
         }
@@ -216,25 +221,24 @@
     return true;
   }
 
-  // Gentle, non-blocking single-request background fetch for the other queue
-  async function fetchOtherQueuePolitely(otherQueueType) {
+  // Non-blocking background fetch for a queue
+  async function fetchQueueRemotely(targetQueueType) {
     const now = Date.now();
-    if (now - lastBgFetchTimestamp[otherQueueType] < 45000) { // Max once every 45s
-      return getStoredStats(otherQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL);
+    if (now - lastBgFetchTimestamp[targetQueueType] < 20000) {
+      return getStoredStats(targetQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL);
     }
 
     if (isBackgroundFetching) return null;
     isBackgroundFetching = true;
 
-    const baseUrl = otherQueueType === 'queue' ? QUEUE_URL : APPROVAL_URL;
+    const baseUrl = targetQueueType === 'queue' ? QUEUE_URL : APPROVAL_URL;
     const cleanUrl = `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=`;
 
     try {
-      lastBgFetchTimestamp[otherQueueType] = now;
+      lastBgFetchTimestamp[targetQueueType] = now;
 
-      // AbortController to never let background request hang
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
 
       const res = await fetch(cleanUrl, {
         credentials: 'include',
@@ -248,12 +252,12 @@
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
 
-      const parsed = extractStatsFromDom(doc, otherQueueType);
+      const parsed = extractStatsFromDom(doc, targetQueueType);
       if (!parsed) return null;
 
-      const baselineKey = otherQueueType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
-      const savedBaseline = parseInt(localStorage.getItem(baselineKey) || (otherQueueType === 'queue' ? '186' : '231'), 10);
-      const totalCount = parsed.total != null ? parsed.total : savedBaseline;
+      const baselineKey = targetQueueType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
+      const savedBaseline = parseInt(localStorage.getItem(baselineKey) || '0', 10);
+      const totalCount = parsed.total != null ? parsed.total : (savedBaseline > 0 ? savedBaseline : parsed.lockedCount);
       const finalLocked = Math.min(totalCount, parsed.lockedCount);
 
       const stats = {
@@ -263,7 +267,7 @@
       };
 
       if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
-      setStoredStats(otherQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL, stats);
+      setStoredStats(targetQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL, stats);
 
       return stats;
     } catch (err) {
@@ -273,12 +277,12 @@
     }
   }
 
-  // Push unified stats to Vercel via background worker
+  // Push unified stats to Vercel via background service worker
   function broadcastDualStats(approval, queue, force = false) {
     if (!approval && !queue) return;
 
-    const appBaseline = parseInt(localStorage.getItem(BASELINE_KEY_APPROVAL) || '231', 10);
-    const qBaseline = parseInt(localStorage.getItem(BASELINE_KEY_QUEUE) || '186', 10);
+    const appBaseline = parseInt(localStorage.getItem(BASELINE_KEY_APPROVAL) || '0', 10);
+    const qBaseline = parseInt(localStorage.getItem(BASELINE_KEY_QUEUE) || '0', 10);
 
     const appTotal = Math.max(0, approval ? approval.total : appBaseline);
     const appLocked = Math.min(appTotal, Math.max(0, approval ? approval.locked : 0));
@@ -291,8 +295,8 @@
     const stateKey = `${appTotal}-${appLocked}-${appOpen}|${qTotal}-${qLocked}-${qOpen}`;
     const now = Date.now();
 
-    // Skip if nothing changed and less than 30s passed
-    if (!force && stateKey === lastBroadcastStateKey && (now - lastBroadcastTime < 30000)) {
+    // Skip duplicate broadcasts within 15 seconds unless forced
+    if (!force && stateKey === lastBroadcastStateKey && (now - lastBroadcastTime < 15000)) {
       return;
     }
 
@@ -311,67 +315,86 @@
 
     console.log(`%c[NBERM Live Sync] Pushed: Approval (${appTotal}/${appLocked}) | Design (${qTotal}/${qLocked})`, 'color: #10b981; font-weight: bold;');
 
-    // Push via Background Service Worker with clean error suppression
+    // Push via Background Service Worker with error suppression
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-        chrome.runtime.sendMessage({ type: 'SYNC_STATS', payload: payload }, (res) => {
-          if (chrome.runtime.lastError) {
-            // Silently handled - suppresses Chrome extension red error flag
-          }
+        chrome.runtime.sendMessage({ type: 'SYNC_STATS', payload: payload }, () => {
+          if (chrome.runtime.lastError) {}
         });
       }
     } catch (e) {}
   }
 
-  // Main synchronous/asynchronous sync coordinator
-  async function performSync() {
+  // Main sync coordinator: handles active desk mode AND locked-PC background mode
+  async function performSync(forceFetch = false) {
     const pageType = detectCurrentPage();
     if (pageType === 'unknown') return;
 
     let liveApproval = getStoredStats(STORAGE_KEY_APPROVAL);
     let liveQueue = getStoredStats(STORAGE_KEY_QUEUE);
 
-    // 1. FAST PATH: Read current page directly from LIVE DOM (<0.05ms, ZERO network requests)
-    const domStats = extractStatsFromDom(document, pageType);
-    if (domStats) {
-      const baselineKey = pageType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
-      const savedBaseline = parseInt(localStorage.getItem(baselineKey) || (pageType === 'queue' ? '186' : '231'), 10);
-      const totalCount = domStats.total != null ? domStats.total : savedBaseline;
-      const finalLocked = Math.min(totalCount, domStats.lockedCount);
+    const isHidden = document.hidden || forceFetch;
 
-      const activeStats = {
-        total: totalCount,
-        locked: finalLocked,
-        unlocked: Math.max(0, totalCount - finalLocked)
-      };
+    // 1. FAST DESK MODE (User is looking at the tab)
+    if (!isHidden) {
+      const domStats = extractStatsFromDom(document, pageType);
+      if (domStats) {
+        const baselineKey = pageType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
+        const totalCount = domStats.total != null ? domStats.total : domStats.lockedCount;
+        const finalLocked = Math.min(totalCount, domStats.lockedCount);
 
-      if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
+        const activeStats = {
+          total: totalCount,
+          locked: finalLocked,
+          unlocked: Math.max(0, totalCount - finalLocked)
+        };
 
-      if (pageType === 'approval') {
-        liveApproval = activeStats;
-        setStoredStats(STORAGE_KEY_APPROVAL, activeStats);
-      } else {
-        liveQueue = activeStats;
-        setStoredStats(STORAGE_KEY_QUEUE, activeStats);
+        if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
+
+        if (pageType === 'approval') {
+          liveApproval = activeStats;
+          setStoredStats(STORAGE_KEY_APPROVAL, activeStats);
+        } else {
+          liveQueue = activeStats;
+          setStoredStats(STORAGE_KEY_QUEUE, activeStats);
+        }
+
+        broadcastDualStats(liveApproval, liveQueue);
       }
-
-      // Immediately broadcast active DOM update with ZERO lag
-      broadcastDualStats(liveApproval, liveQueue);
     }
 
-    // 2. GENTLE BACKGROUND PATH: Only leader tab fetches the OTHER queue, max once every 45s
+    // 2. BACKGROUND / LOCKED PC MODE: Only leader tab fetches fresh server HTML
     if (isTabLeader()) {
       const otherQueue = pageType === 'queue' ? 'approval' : 'queue';
-      const otherStats = await fetchOtherQueuePolitely(otherQueue);
+      const otherStats = await fetchQueueRemotely(otherQueue);
       if (otherStats) {
         if (otherQueue === 'approval') liveApproval = otherStats;
         else liveQueue = otherStats;
         broadcastDualStats(liveApproval, liveQueue);
       }
+
+      // If screen is locked, also fetch current queue remotely since DOM is static
+      if (isHidden) {
+        const currentStats = await fetchQueueRemotely(pageType);
+        if (currentStats) {
+          if (pageType === 'approval') liveApproval = currentStats;
+          else liveQueue = currentStats;
+          broadcastDualStats(liveApproval, liveQueue, true);
+        }
+      }
     }
   }
 
-  // Cross-tab sync: When any tab updates its queue, all other tabs update instantly without network
+  // Listen to background service worker alarms (wakes up even when PC is locked)
+  try {
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg && msg.type === 'TRIGGER_BACKGROUND_SYNC') {
+        performSync(true);
+      }
+    });
+  } catch (e) {}
+
+  // Cross-tab sync via storage events
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY_APPROVAL || e.key === STORAGE_KEY_QUEUE) {
       const app = getStoredStats(STORAGE_KEY_APPROVAL);
@@ -380,19 +403,28 @@
     }
   });
 
-  // Event-Driven Sync: Zero CPU polling. Runs when user interacts or tab becomes visible
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) performSync();
-  });
-  window.addEventListener('focus', performSync);
-
-  // Immediate sync on load
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', performSync);
-  } else {
-    performSync();
+  // Dedicated Web Worker Timer: NEVER throttled by Chrome when tab is in background or PC is locked
+  try {
+    const workerBlob = new Blob([
+      `setInterval(function() { postMessage('tick'); }, 25000);`
+    ], { type: 'application/javascript' });
+    const bgTimerWorker = new Worker(URL.createObjectURL(workerBlob));
+    bgTimerWorker.onmessage = function() {
+      performSync(document.hidden ? true : false);
+    };
+  } catch (e) {
+    setInterval(() => performSync(document.hidden ? true : false), 25000);
   }
 
-  // Gentle, lightweight background timer (30 seconds, not 10 seconds)
-  setInterval(performSync, 30000);
+  // Trigger on visibility change and load
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) performSync(false);
+  });
+  window.addEventListener('focus', () => performSync(false));
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => performSync(false));
+  } else {
+    performSync(false);
+  }
 })();

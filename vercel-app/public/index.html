@@ -1259,17 +1259,23 @@
     let timelineHistory = [];
     try {
       timelineHistory = JSON.parse(localStorage.getItem('nberm_timeline_history') || '[]');
+      // Automatically sanitize any legacy 860 mock points from previous versions
+      timelineHistory = timelineHistory.filter(p => Number(p.total) < 800);
     } catch (e) {
       timelineHistory = [];
     }
 
     let dailyPeakWorkload = Number(localStorage.getItem('nberm_daily_peak') || '0');
+    if (dailyPeakWorkload >= 800) {
+      dailyPeakWorkload = 0;
+      localStorage.removeItem('nberm_daily_peak');
+    }
 
     function renderRealtimeTimeline(data, totalWorkload, totalLocked, totalOpen, qTotal, qLocked, appTotal, appLocked) {
       const now = Date.now();
 
-      // Track Daily Peak
-      if (totalWorkload > dailyPeakWorkload) {
+      // Track Daily Peak (ignoring legacy mock 860 spikes)
+      if (totalWorkload > 0 && totalWorkload < 800 && totalWorkload > dailyPeakWorkload) {
         dailyPeakWorkload = totalWorkload;
         localStorage.setItem('nberm_daily_peak', String(dailyPeakWorkload));
       }

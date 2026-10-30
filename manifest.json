@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "3 - NBERM Phone Sync",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Live queue and locked orders sync to phone dashboard.",
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": [
     "https://*.vercel.app/*",
