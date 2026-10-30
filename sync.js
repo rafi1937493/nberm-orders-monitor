@@ -311,10 +311,14 @@
 
     console.log(`%c[NBERM Live Sync] Pushed: Approval (${appTotal}/${appLocked}) | Design (${qTotal}/${qLocked})`, 'color: #10b981; font-weight: bold;');
 
-    // Push via Background Service Worker (0 page lag, 0 CSP issues)
+    // Push via Background Service Worker with clean error suppression
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-        chrome.runtime.sendMessage({ type: 'SYNC_STATS', payload: payload });
+        chrome.runtime.sendMessage({ type: 'SYNC_STATS', payload: payload }, (res) => {
+          if (chrome.runtime.lastError) {
+            // Silently handled - suppresses Chrome extension red error flag
+          }
+        });
       }
     } catch (e) {}
   }
