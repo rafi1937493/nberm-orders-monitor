@@ -1,16 +1,15 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.0.7)
- * - Continuous Background Syncing (Even when PC is locked / Win + L):
- *   1. Dedicated Web Worker + Chrome Alarms: Heartbeat continues running while Windows is locked.
- *   2. Active Background Fetch: Refreshes queue data from server when screen is locked and DOM is idle.
- *   3. Ultra-Fast Desk Mode: When tab is open and visible, reads live DOM directly (<0.05ms) with zero lag.
- *   4. Zero False Data: Permanently purged all legacy 545/315 mock numbers.
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.0.8)
+ * - Complete Multi-Page Scanning: Scans ALL pages beyond the 100 limit (304+ items) for exact locked counts
+ * - Non-Blocking Background Pagination: Zero lag on active desk work with polite throttling
+ * - Continuous Background Syncing (Even when PC is locked / Win + L)
+ * - Zero False Data: Always tracks live real-time queue states
  */
 
 (function () {
   'use strict';
 
-  const VERSION = '1.0.7';
+  const VERSION = '1.0.8';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -221,57 +220,136 @@
     return true;
   }
 
-  // Non-blocking background fetch for a queue
-  async function fetchQueueRemotely(targetQueueType) {
+  // Multi-page queue scanner: counts ALL locked orders across ALL pages beyond the 100 limit
+  async function scanQueueMultiPage(targetQueueType, initialDomStats = null) {
     const now = Date.now();
-    if (now - lastBgFetchTimestamp[targetQueueType] < 20000) {
-      return getStoredStats(targetQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL);
+    const storageKey = targetQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL;
+    const baselineKey = targetQueueType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
+
+    // Throttle background scans to at most once per 20 seconds unless forced with initialDomStats
+    if (!initialDomStats && (now - lastBgFetchTimestamp[targetQueueType] < 20000)) {
+      return getStoredStats(storageKey);
     }
 
-    if (isBackgroundFetching) return null;
+    if (isBackgroundFetching) {
+      return getStoredStats(storageKey);
+    }
     isBackgroundFetching = true;
 
     const baseUrl = targetQueueType === 'queue' ? QUEUE_URL : APPROVAL_URL;
-    const cleanUrl = `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=`;
 
     try {
       lastBgFetchTimestamp[targetQueueType] = now;
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      let basePageStats = initialDomStats;
 
-      const res = await fetch(cleanUrl, {
-        credentials: 'include',
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
+      // If we don't have DOM stats from an active tab, fetch page 1
+      if (!basePageStats) {
+        const cleanUrl = `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-      if (!res.ok) return null;
+        const res = await fetch(cleanUrl, {
+          credentials: 'include',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
 
-      const html = await res.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+        if (!res.ok) return getStoredStats(storageKey);
 
-      const parsed = extractStatsFromDom(doc, targetQueueType);
-      if (!parsed) return null;
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        basePageStats = extractStatsFromDom(doc, targetQueueType);
+      }
 
-      const baselineKey = targetQueueType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
-      const savedBaseline = parseInt(localStorage.getItem(baselineKey) || '0', 10);
-      const totalCount = parsed.total != null ? parsed.total : (savedBaseline > 0 ? savedBaseline : parsed.lockedCount);
-      const finalLocked = Math.min(totalCount, parsed.lockedCount);
+      if (!basePageStats) return getStoredStats(storageKey);
 
-      const stats = {
+      const totalCount = basePageStats.total != null ? basePageStats.total : basePageStats.lockedCount;
+
+      // If empty queue
+      if (totalCount === 0) {
+        const emptyStats = { total: 0, locked: 0, unlocked: 0, lockedIds: [] };
+        setStoredStats(storageKey, emptyStats);
+        return emptyStats;
+      }
+
+      const allLockedIds = new Set(basePageStats.lockedIds || []);
+      let totalFallbackLocks = (basePageStats.lockedIds && basePageStats.lockedIds.size > 0) ? 0 : basePageStats.lockedCount;
+
+      // Case 1: All records fit on 1 page (total <= 100 or rangeEnd >= total)
+      if (totalCount <= 100 || basePageStats.rangeEnd >= totalCount || basePageStats.rangeEnd === 0) {
+        const finalLocked = Math.min(totalCount, (allLockedIds.size > 0 ? allLockedIds.size : totalFallbackLocks));
+        const singlePageStats = {
+          total: totalCount,
+          locked: finalLocked,
+          unlocked: Math.max(0, totalCount - finalLocked),
+          lockedIds: Array.from(allLockedIds)
+        };
+        if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
+        setStoredStats(storageKey, singlePageStats);
+        return singlePageStats;
+      }
+
+      // Case 2: Multi-Page Queue (e.g. 304 orders across 4 pages)
+      const totalPages = Math.ceil(totalCount / 100);
+      console.log(`[NBERM Multi-Page Scan: ${targetQueueType.toUpperCase()}] Scanning ${totalCount} orders across ${totalPages} pages (Page 1 has ${basePageStats.lockedCount} locks)...`);
+
+      const remainingFetches = [];
+      for (let start = 0; start < totalCount; start += 100) {
+        // Skip whichever page range was already covered by basePageStats
+        const isCovered = (start + 1 >= basePageStats.rangeStart && start < basePageStats.rangeEnd);
+        if (isCovered) continue;
+
+        const pageUrl = `${baseUrl}&limit=100&limitstart=${start}&searchqueue=&searchrush=&searchlate=&search=`;
+        remainingFetches.push(
+          fetch(pageUrl, { credentials: 'include' })
+            .then(r => r.ok ? r.text() : '')
+            .then(html => {
+              if (!html) return null;
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              return extractStatsFromDom(doc, targetQueueType);
+            })
+            .catch(() => null)
+        );
+      }
+
+      const remainingResults = await Promise.all(remainingFetches);
+      for (const pageStats of remainingResults) {
+        if (pageStats) {
+          if (pageStats.lockedIds && pageStats.lockedIds.size > 0) {
+            for (const id of pageStats.lockedIds) {
+              allLockedIds.add(id);
+            }
+          } else {
+            totalFallbackLocks += (pageStats.lockedCount || 0);
+          }
+        }
+      }
+
+      // Always restore session limitstart back to 0 silently with limit=100 so user's PC view is unaffected
+      try {
+        fetch(`${baseUrl}&limit=100&limitstart=0`, { credentials: 'include' }).catch(() => {});
+      } catch (e) {}
+
+      const rawTotalLocks = allLockedIds.size > 0 ? (allLockedIds.size + totalFallbackLocks) : totalFallbackLocks;
+      const finalLocked = Math.min(totalCount, Math.max(0, rawTotalLocks));
+      const multiPageStats = {
         total: totalCount,
         locked: finalLocked,
-        unlocked: Math.max(0, totalCount - finalLocked)
+        unlocked: Math.max(0, totalCount - finalLocked),
+        lockedIds: Array.from(allLockedIds)
       };
 
-      if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
-      setStoredStats(targetQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL, stats);
+      console.log(`%c[NBERM Multi-Page Scan: ${targetQueueType.toUpperCase()} COMPLETE] Total: ${totalCount} | ALL Locked: ${finalLocked} (Unique IDs: ${allLockedIds.size}) | Open: ${multiPageStats.unlocked}`, 'color: #10b981; font-weight: bold;');
 
-      return stats;
+      if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
+      setStoredStats(storageKey, multiPageStats);
+      return multiPageStats;
     } catch (err) {
-      return null;
+      console.warn(`[NBERM Scan Error: ${targetQueueType}]`, err);
+      return getStoredStats(storageKey);
     } finally {
       isBackgroundFetching = false;
     }
@@ -308,8 +386,18 @@
       count: appTotal + qTotal,
       locked: appLocked + qLocked,
       unlocked: appOpen + qOpen,
-      approval: { total: appTotal, locked: appLocked, unlocked: appOpen },
-      queue: { total: qTotal, locked: qLocked, unlocked: qOpen },
+      approval: {
+        total: appTotal,
+        locked: appLocked,
+        unlocked: appOpen,
+        lockedOrders: approval?.lockedIds || []
+      },
+      queue: {
+        total: qTotal,
+        locked: qLocked,
+        unlocked: qOpen,
+        lockedOrders: queue?.lockedIds || []
+      },
       timestamp: now
     };
 
@@ -341,41 +429,71 @@
       if (domStats) {
         const baselineKey = pageType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
         const totalCount = domStats.total != null ? domStats.total : domStats.lockedCount;
-        const finalLocked = Math.min(totalCount, domStats.lockedCount);
 
-        const activeStats = {
-          total: totalCount,
-          locked: finalLocked,
-          unlocked: Math.max(0, totalCount - finalLocked)
-        };
+        // If single page (<= 100), DOM gives 100% full stats instantly
+        if (totalCount <= 100 || domStats.rangeEnd >= totalCount || domStats.rangeEnd === 0) {
+          const finalLocked = Math.min(totalCount, domStats.lockedCount);
+          const activeStats = {
+            total: totalCount,
+            locked: finalLocked,
+            unlocked: Math.max(0, totalCount - finalLocked),
+            lockedIds: Array.from(domStats.lockedIds || [])
+          };
 
-        if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
+          if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
 
-        if (pageType === 'approval') {
-          liveApproval = activeStats;
-          setStoredStats(STORAGE_KEY_APPROVAL, activeStats);
+          if (pageType === 'approval') {
+            liveApproval = activeStats;
+            setStoredStats(STORAGE_KEY_APPROVAL, activeStats);
+          } else {
+            liveQueue = activeStats;
+            setStoredStats(STORAGE_KEY_QUEUE, activeStats);
+          }
+
+          broadcastDualStats(liveApproval, liveQueue);
         } else {
-          liveQueue = activeStats;
-          setStoredStats(STORAGE_KEY_QUEUE, activeStats);
-        }
+          // Multi-page queue (e.g. 304 orders across 4 pages):
+          const cachedStats = getStoredStats(pageType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL);
+          const cacheAge = Date.now() - (lastBgFetchTimestamp[pageType] || 0);
 
-        broadcastDualStats(liveApproval, liveQueue);
+          if (cachedStats && Math.abs(cachedStats.total - totalCount) <= 2 && cacheAge < 25000) {
+            // Keep full multi-page locked count so we don't drop to page 1's visible locks
+            if (pageType === 'approval') liveApproval = cachedStats;
+            else liveQueue = cachedStats;
+            broadcastDualStats(liveApproval, liveQueue);
+          } else {
+            // Run multi-page scan in background using leader tab
+            if (isTabLeader()) {
+              scanQueueMultiPage(pageType, domStats).then(freshStats => {
+                if (freshStats) {
+                  if (pageType === 'approval') liveApproval = freshStats;
+                  else liveQueue = freshStats;
+                  broadcastDualStats(liveApproval, liveQueue, true);
+                }
+              });
+            } else if (cachedStats) {
+              if (pageType === 'approval') liveApproval = cachedStats;
+              else liveQueue = cachedStats;
+              broadcastDualStats(liveApproval, liveQueue);
+            }
+          }
+        }
       }
     }
 
-    // 2. BACKGROUND / LOCKED PC MODE: Only leader tab fetches fresh server HTML
+    // 2. BACKGROUND / LOCKED PC MODE: Only leader tab fetches fresh server HTML across all pages
     if (isTabLeader()) {
       const otherQueue = pageType === 'queue' ? 'approval' : 'queue';
-      const otherStats = await fetchQueueRemotely(otherQueue);
+      const otherStats = await scanQueueMultiPage(otherQueue, null);
       if (otherStats) {
         if (otherQueue === 'approval') liveApproval = otherStats;
         else liveQueue = otherStats;
         broadcastDualStats(liveApproval, liveQueue);
       }
 
-      // If screen is locked, also fetch current queue remotely since DOM is static
+      // If screen is locked, also scan current queue remotely across all pages
       if (isHidden) {
-        const currentStats = await fetchQueueRemotely(pageType);
+        const currentStats = await scanQueueMultiPage(pageType, null);
         if (currentStats) {
           if (pageType === 'approval') liveApproval = currentStats;
           else liveQueue = currentStats;

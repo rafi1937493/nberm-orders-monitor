@@ -125,12 +125,14 @@ export default async function handler(req, res) {
         approval: {
           total: appTotal,
           locked: appLocked,
-          unlocked: appOpen
+          unlocked: appOpen,
+          lockedOrders: Array.isArray(body?.approval?.lockedOrders) ? body.approval.lockedOrders : (prevData?.approval?.lockedOrders || [])
         },
         queue: {
           total: qTotal,
           locked: qLocked,
-          unlocked: qOpen
+          unlocked: qOpen,
+          lockedOrders: Array.isArray(body?.queue?.lockedOrders) ? body.queue.lockedOrders : (prevData?.queue?.lockedOrders || [])
         },
         updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: Date.now()
@@ -166,6 +168,7 @@ export default async function handler(req, res) {
         data.approval.total = aTotal;
         data.approval.locked = aLocked;
         data.approval.unlocked = Math.max(0, aTotal - aLocked);
+        if (!Array.isArray(data.approval.lockedOrders)) data.approval.lockedOrders = [];
       }
       if (data.queue) {
         const qTotal = Math.max(0, Number(data.queue.total ?? 0));
@@ -173,6 +176,7 @@ export default async function handler(req, res) {
         data.queue.total = qTotal;
         data.queue.locked = qLocked;
         data.queue.unlocked = Math.max(0, qTotal - qLocked);
+        if (!Array.isArray(data.queue.lockedOrders)) data.queue.lockedOrders = [];
       }
       const appT = data.approval ? data.approval.total : 0;
       const appL = data.approval ? data.approval.locked : 0;

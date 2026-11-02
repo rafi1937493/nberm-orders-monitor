@@ -1696,11 +1696,21 @@
       document.getElementById('app-total').innerText = appTotal;
       document.getElementById('app-locked').innerText = appLocked;
       document.getElementById('app-open').innerText = appOpen;
+      if (data.approval && Array.isArray(data.approval.lockedOrders) && data.approval.lockedOrders.length > 0) {
+        document.getElementById('app-locked').title = `Locked Orders (${data.approval.lockedOrders.length}): ${data.approval.lockedOrders.join(', ')}`;
+      } else {
+        document.getElementById('app-locked').removeAttribute('title');
+      }
 
       // 5. Design Detailed Card
       document.getElementById('queue-total').innerText = qTotal;
       document.getElementById('queue-locked').innerText = qLocked;
       document.getElementById('queue-open').innerText = qOpen;
+      if (data.queue && Array.isArray(data.queue.lockedOrders) && data.queue.lockedOrders.length > 0) {
+        document.getElementById('queue-locked').title = `Locked Orders (${data.queue.lockedOrders.length}): ${data.queue.lockedOrders.join(', ')}`;
+      } else {
+        document.getElementById('queue-locked').removeAttribute('title');
+      }
 
       // 6. Live Timeline & Diagnostics
       renderRealtimeTimeline(data, totalWorkload, totalLocked, totalOpen, qTotal, qLocked, appTotal, appLocked);

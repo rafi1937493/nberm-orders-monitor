@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "3 - NBERM Phone Sync",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Live queue and locked orders sync to phone dashboard.",
   "permissions": [
     "storage",
