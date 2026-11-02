@@ -220,6 +220,16 @@
     return true;
   }
 
+  // Isolate active Requests section strictly between tab markers (from Design-Queue-Monitor)
+  function extractRequestsSection(html) {
+    if (!html || typeof html !== 'string') return '';
+    const startMarker = 'id="unassigned-page"';
+    const endMarker = 'id="escalated-page"';
+    const startIdx = html.indexOf(startMarker);
+    const endIdx = html.indexOf(endMarker);
+    return (startIdx !== -1 && endIdx !== -1) ? html.slice(startIdx, endIdx) : html;
+  }
+
   // Multi-page queue scanner: counts ALL locked orders across ALL pages beyond the 100 limit
   async function scanQueueMultiPage(targetQueueType, initialDomStats = null) {
     const now = Date.now();
@@ -243,23 +253,26 @@
 
       let basePageStats = initialDomStats;
 
-      // If we don't have DOM stats from an active tab, fetch page 1
+      // If we don't have DOM stats from an active tab, fetch page 1 with cache-buster
       if (!basePageStats) {
-        const cleanUrl = `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=`;
+        const cb = Date.now() + Math.random();
+        const cleanUrl = `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=&_cb=${cb}`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         const res = await fetch(cleanUrl, {
           credentials: 'include',
+          cache: 'no-store',
           signal: controller.signal
         });
         clearTimeout(timeoutId);
 
         if (!res.ok) return getStoredStats(storageKey);
 
-        const html = await res.text();
+        const rawHtml = await res.text();
+        const targetHtml = targetQueueType === 'queue' ? extractRequestsSection(rawHtml) : rawHtml;
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const doc = parser.parseFromString(targetHtml, 'text/html');
         basePageStats = extractStatsFromDom(doc, targetQueueType);
       }
 
@@ -301,14 +314,16 @@
         const isCovered = (start + 1 >= basePageStats.rangeStart && start < basePageStats.rangeEnd);
         if (isCovered) continue;
 
-        const pageUrl = `${baseUrl}&limit=100&limitstart=${start}&searchqueue=&searchrush=&searchlate=&search=`;
+        const cb = Date.now() + Math.random();
+        const pageUrl = `${baseUrl}&limit=100&limitstart=${start}&searchqueue=&searchrush=&searchlate=&search=&_cb=${cb}`;
         remainingFetches.push(
-          fetch(pageUrl, { credentials: 'include' })
+          fetch(pageUrl, { credentials: 'include', cache: 'no-store' })
             .then(r => r.ok ? r.text() : '')
             .then(html => {
               if (!html) return null;
+              const targetHtml = targetQueueType === 'queue' ? extractRequestsSection(html) : html;
               const parser = new DOMParser();
-              const doc = parser.parseFromString(html, 'text/html');
+              const doc = parser.parseFromString(targetHtml, 'text/html');
               return extractStatsFromDom(doc, targetQueueType);
             })
             .catch(() => null)
