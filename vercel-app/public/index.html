@@ -886,6 +886,57 @@
       box-shadow: 0 0 8px currentColor;
     }
 
+    /* LOCKED ORDERS DETAIL PANEL INSIDE QUEUE CARDS */
+    .locked-orders-panel {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .locked-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #94a3b8;
+    }
+    .locked-chips-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .locked-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fef08a;
+      transition: all 0.15s ease;
+    }
+    .locked-chip.approval-chip {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.35);
+      color: #bae6fd;
+    }
+    .locked-chip-icon {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+    }
+
     @media (max-width: 768px) {
       .floating-bottom-nav {
         display: flex;
@@ -923,10 +974,43 @@
       .bottom-bar {
         margin-bottom: 20px;
       }
+
+      /* Phone / PWA Dedicated Tabbed Views (Zero Long Scroll) */
+      body[data-mobile-tab="dashboard"] .queues-row {
+        display: none !important;
+      }
+      body[data-mobile-tab="dashboard"] .kpi-grid,
+      body[data-mobile-tab="dashboard"] .middle-grid {
+        display: grid !important;
+      }
+
+      body[data-mobile-tab="design"] .kpi-grid,
+      body[data-mobile-tab="design"] .middle-grid,
+      body[data-mobile-tab="design"] #approval-card {
+        display: none !important;
+      }
+      body[data-mobile-tab="design"] .queues-row {
+        display: block !important;
+      }
+      body[data-mobile-tab="design"] #design-card {
+        display: flex !important;
+      }
+
+      body[data-mobile-tab="approval"] .kpi-grid,
+      body[data-mobile-tab="approval"] .middle-grid,
+      body[data-mobile-tab="approval"] #design-card {
+        display: none !important;
+      }
+      body[data-mobile-tab="approval"] .queues-row {
+        display: block !important;
+      }
+      body[data-mobile-tab="approval"] #approval-card {
+        display: flex !important;
+      }
     }
   </style>
 </head>
-<body>
+<body data-mobile-tab="dashboard">
 
   <div class="app-shell">
     <!-- 1. TOP NAVBAR (VENTOR STYLE) -->
@@ -1118,7 +1202,7 @@
 
         <div class="distribution-content">
           <div class="bars-list">
-            <div class="bar-item">
+            <div class="bar-item" onclick="selectNavTab('design', event)" style="cursor: pointer;" title="View Design Queue Details">
               <div class="bar-item-header">
                 <div class="bar-item-dot-label">
                   <span class="bar-dot" style="background: #10b981;"></span>
@@ -1131,7 +1215,7 @@
               </div>
             </div>
 
-            <div class="bar-item">
+            <div class="bar-item" onclick="selectNavTab('approval', event)" style="cursor: pointer;" title="View Approval Queue Details">
               <div class="bar-item-header">
                 <div class="bar-item-dot-label">
                   <span class="bar-dot" style="background: #0ea5e9;"></span>
@@ -1282,6 +1366,14 @@
             <div class="metric-brick-desc">Ready to Action</div>
           </div>
         </div>
+
+        <!-- Locked Orders Detail Panel for Approval -->
+        <div class="locked-orders-panel" id="app-locked-panel" style="display: none;">
+          <div class="locked-panel-header">
+            <span>In-Review Locked Orders (<span id="app-locked-count">0</span>)</span>
+          </div>
+          <div class="locked-chips-grid" id="app-locked-chips"></div>
+        </div>
       </div>
 
       <!-- Card 2: Design Queue -->
@@ -1318,6 +1410,14 @@
             <div class="metric-brick-digit" id="queue-open">--</div>
             <div class="metric-brick-desc">Unassigned Orders</div>
           </div>
+        </div>
+
+        <!-- Locked Orders Detail Panel for Design -->
+        <div class="locked-orders-panel" id="design-locked-panel" style="display: none;">
+          <div class="locked-panel-header">
+            <span>Designer Claimed Orders (<span id="design-locked-count">0</span>)</span>
+          </div>
+          <div class="locked-chips-grid" id="design-locked-chips"></div>
         </div>
       </div>
     </section>
@@ -1424,8 +1524,17 @@
       if (e.key === 'f' || e.key === 'F') toggleFullscreen();
     });
 
+    let currentMobileTab = 'dashboard';
+
     function selectNavTab(tabName, event) {
       if (event) event.preventDefault();
+      if (tabName === 'refresh') {
+        triggerManualRefresh();
+        return;
+      }
+
+      currentMobileTab = tabName;
+      document.body.setAttribute('data-mobile-tab', tabName);
 
       // 1. Update active pill classes for desktop nav and mobile floating bar
       const pills = document.querySelectorAll('.nav-pill, .float-nav-item');
@@ -1440,18 +1549,34 @@
       if (appCard) appCard.classList.remove('highlight-focus');
       if (desCard) desCard.classList.remove('highlight-focus');
 
-      // 3. Handle navigation & animated focus
-      if (tabName === 'dashboard') {
+      const isMobile = window.innerWidth <= 768;
+
+      // 3. Update page title on mobile for clean tab context
+      const titleEl = document.querySelector('.page-title');
+      if (isMobile && titleEl) {
+        if (tabName === 'dashboard') titleEl.textContent = 'Dashboard';
+        else if (tabName === 'design') titleEl.textContent = 'Design Queue';
+        else if (tabName === 'approval') titleEl.textContent = 'Approval Queue';
+      } else if (titleEl) {
+        titleEl.textContent = 'Dashboard';
+      }
+
+      // 4. Handle navigation & dedicated view switching
+      if (isMobile) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (tabName === 'design') {
-        if (desCard) {
-          desCard.classList.add('highlight-focus');
-          desCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else if (tabName === 'approval') {
-        if (appCard) {
-          appCard.classList.add('highlight-focus');
-          appCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        if (tabName === 'dashboard') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (tabName === 'design') {
+          if (desCard) {
+            desCard.classList.add('highlight-focus');
+            desCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else if (tabName === 'approval') {
+          if (appCard) {
+            appCard.classList.add('highlight-focus');
+            appCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
         }
       }
     }
@@ -1466,6 +1591,9 @@
     }
 
     window.addEventListener('scroll', () => {
+      // Don't override mobile tabs on scroll
+      if (window.innerWidth <= 768) return;
+
       if (window.scrollY < 80) {
         const active = document.querySelector('.nav-pill.active, .float-nav-item.active');
         if (active && active.getAttribute('data-tab') !== 'dashboard') {
@@ -1834,20 +1962,68 @@
       document.getElementById('app-total').innerText = appTotal;
       document.getElementById('app-locked').innerText = appLocked;
       document.getElementById('app-open').innerText = appOpen;
-      if (data.approval && Array.isArray(data.approval.lockedOrders) && data.approval.lockedOrders.length > 0) {
-        document.getElementById('app-locked').title = `Locked Orders (${data.approval.lockedOrders.length}): ${data.approval.lockedOrders.join(', ')}`;
+      const appLockedList = (data.approval && Array.isArray(data.approval.lockedOrders)) ? data.approval.lockedOrders : [];
+      if (appLockedList.length > 0) {
+        document.getElementById('app-locked').title = `Locked Orders (${appLockedList.length}): ${appLockedList.join(', ')}`;
       } else {
         document.getElementById('app-locked').removeAttribute('title');
+      }
+
+      // Render locked chips for Approval (Touch-friendly & Desktop)
+      const appPanel = document.getElementById('app-locked-panel');
+      const appChips = document.getElementById('app-locked-chips');
+      const appCountEl = document.getElementById('app-locked-count');
+      if (appPanel && appChips) {
+        if (appLockedList.length > 0) {
+          appPanel.style.display = 'flex';
+          if (appCountEl) appCountEl.innerText = appLockedList.length;
+          appChips.innerHTML = appLockedList.map(orderId => `
+            <span class="locked-chip approval-chip" title="Locked Order ${orderId}">
+              <svg class="locked-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              #${orderId}
+            </span>
+          `).join('');
+        } else {
+          appPanel.style.display = 'none';
+          appChips.innerHTML = '';
+        }
       }
 
       // 5. Design Detailed Card
       document.getElementById('queue-total').innerText = qTotal;
       document.getElementById('queue-locked').innerText = qLocked;
       document.getElementById('queue-open').innerText = qOpen;
-      if (data.queue && Array.isArray(data.queue.lockedOrders) && data.queue.lockedOrders.length > 0) {
-        document.getElementById('queue-locked').title = `Locked Orders (${data.queue.lockedOrders.length}): ${data.queue.lockedOrders.join(', ')}`;
+      const qLockedList = (data.queue && Array.isArray(data.queue.lockedOrders)) ? data.queue.lockedOrders : [];
+      if (qLockedList.length > 0) {
+        document.getElementById('queue-locked').title = `Locked Orders (${qLockedList.length}): ${qLockedList.join(', ')}`;
       } else {
         document.getElementById('queue-locked').removeAttribute('title');
+      }
+
+      // Render locked chips for Design (Touch-friendly & Desktop)
+      const qPanel = document.getElementById('design-locked-panel');
+      const qChips = document.getElementById('design-locked-chips');
+      const qCountEl = document.getElementById('design-locked-count');
+      if (qPanel && qChips) {
+        if (qLockedList.length > 0) {
+          qPanel.style.display = 'flex';
+          if (qCountEl) qCountEl.innerText = qLockedList.length;
+          qChips.innerHTML = qLockedList.map(orderId => `
+            <span class="locked-chip" title="Locked Order ${orderId}">
+              <svg class="locked-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              #${orderId}
+            </span>
+          `).join('');
+        } else {
+          qPanel.style.display = 'none';
+          qChips.innerHTML = '';
+        }
       }
 
       // 6. Live Timeline & Diagnostics
