@@ -7,7 +7,7 @@
  */
 
 const SUPABASE_URL = 'https://qloghdvzdvdaecvggtuh.supabase.co';
-const SUPABASE_KEY = 'sb_secret_dCCEjkX06RoaKG44MDkkyg_k5mSxc4u';
+const SUPABASE_KEY = 'sb_publishable_sp8meDyllLX-AKO_Xsnw4A_6M9XazTb';
 const VERCEL_URL = 'https://nberm-orders-monitor.vercel.app';
 
 // Create persistent periodic heartbeat alarm (every 0.5 minutes = 30 seconds)
