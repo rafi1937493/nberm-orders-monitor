@@ -7,33 +7,14 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const edgeConfigId = process.env.EDGE_CONFIG_ID || 'ecfg_l7tb6qpjasuveerkpgmj7wcxmfik';
-  const vercelApiToken = process.env.VERCEL_API_TOKEN || 'vcp_7AqYSevH2P9pHR8WRsrhWBG773ITlMHqR25PhjAcAZePOvfrVZ3mf8vE';
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  // Retrieve persistent data across cold starts (Edge Config > Upstash KV > In-Memory)
+  // Retrieve persistent data across cold starts (Upstash KV / In-Memory)
   async function loadPersistentStatus() {
     if (global.__nberm_orders) return global.__nberm_orders;
 
-    // 1. Try Vercel Edge Config (Global distributed key-value store, <1ms)
-    if (edgeConfigId && vercelApiToken) {
-      try {
-        const ecRes = await fetch(`https://api.vercel.com/v1/edge-config/${edgeConfigId}/item/nberm_orders_status`, {
-          headers: { Authorization: `Bearer ${vercelApiToken}` }
-        });
-        if (ecRes.ok) {
-          const ecJson = await ecRes.json();
-          if (ecJson && ecJson.value) {
-            const val = typeof ecJson.value === 'string' ? JSON.parse(ecJson.value) : ecJson.value;
-            global.__nberm_orders = val;
-            return val;
-          }
-        }
-      } catch (err) {}
-    }
-
-    // 2. Try Upstash / KV
+    // Try Upstash / KV if configured
     if (kvUrl && kvToken) {
       try {
         const kvRes = await fetch(`${kvUrl}/get/nberm_orders_status`, {
@@ -51,27 +32,11 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // Save persistent data
+  // Save persistent data (In-memory + Upstash KV)
   async function savePersistentStatus(payload) {
     global.__nberm_orders = payload;
 
-    // 1. Save to Vercel Edge Config
-    if (edgeConfigId && vercelApiToken) {
-      try {
-        await fetch(`https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${vercelApiToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            items: [{ operation: 'upsert', key: 'nberm_orders_status', value: payload }]
-          })
-        });
-      } catch (err) {}
-    }
-
-    // 2. Save to Upstash / KV if available
+    // Save to Upstash / KV if configured
     if (kvUrl && kvToken) {
       try {
         await fetch(`${kvUrl}/set/nberm_orders_status`, {
