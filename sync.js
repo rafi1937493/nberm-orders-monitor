@@ -1,15 +1,15 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.0.8)
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.0.9 - Supabase Edition)
  * - Complete Multi-Page Scanning: Scans ALL pages beyond the 100 limit (304+ items) for exact locked counts
  * - Non-Blocking Background Pagination: Zero lag on active desk work with polite throttling
- * - Continuous Background Syncing (Even when PC is locked / Win + L)
+ * - Continuous Background Syncing directly to Supabase PostgreSQL (even when PC is locked / Win + L)
  * - Zero False Data: Always tracks live real-time queue states
  */
 
 (function () {
   'use strict';
 
-  const VERSION = '1.0.8';
+  const VERSION = '1.0.9';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 

@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "3 - NBERM Phone Sync",
-  "version": "1.0.8",
-  "description": "Live queue and locked orders sync to phone dashboard.",
+  "version": "1.0.9",
+  "description": "Live queue and locked orders sync to Supabase & phone dashboard.",
   "permissions": [
     "storage",
     "alarms",
     "tabs"
   ],
   "host_permissions": [
+    "https://*.supabase.co/*",
     "https://*.vercel.app/*",
     "https://*.nberm.com/*",
     "http://*.nberm.com/*"

@@ -7,14 +7,35 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://qloghdvzdvdaecvggtuh.supabase.co';
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || 'sb_secret_dCCEjkX06RoaKG44MDkkyg_k5mSxc4u';
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  // Retrieve persistent data across cold starts (Upstash KV / In-Memory)
+  // Retrieve persistent data across cold starts (Supabase > Upstash KV > In-Memory)
   async function loadPersistentStatus() {
     if (global.__nberm_orders) return global.__nberm_orders;
 
-    // Try Upstash / KV if configured
+    // 1. Try Supabase REST API
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/orders_status?id=eq.current&select=*`, {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
+        });
+        if (sbRes.ok) {
+          const rows = await sbRes.json();
+          if (Array.isArray(rows) && rows.length > 0 && rows[0]) {
+            global.__nberm_orders = rows[0];
+            return rows[0];
+          }
+        }
+      } catch (err) {}
+    }
+
+    // 2. Try Upstash / KV if configured
     if (kvUrl && kvToken) {
       try {
         const kvRes = await fetch(`${kvUrl}/get/nberm_orders_status`, {
@@ -32,11 +53,37 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // Save persistent data (In-memory + Upstash KV)
+  // Save persistent data (Supabase + In-memory + Upstash KV)
   async function savePersistentStatus(payload) {
     global.__nberm_orders = payload;
 
-    // Save to Upstash / KV if configured
+    // 1. Save to Supabase REST API
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/orders_status?on_conflict=id`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            id: 'current',
+            total: payload.total,
+            count: payload.count,
+            locked: payload.locked,
+            unlocked: payload.unlocked,
+            approval: payload.approval,
+            queue: payload.queue,
+            updated_at: payload.updatedAt,
+            timestamp: payload.timestamp
+          })
+        });
+      } catch (err) {}
+    }
+
+    // 2. Save to Upstash / KV if configured
     if (kvUrl && kvToken) {
       try {
         await fetch(`${kvUrl}/set/nberm_orders_status`, {
