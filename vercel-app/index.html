@@ -9,10 +9,10 @@
   <meta name="theme-color" content="#090d16">
   <meta name="description" content="Next-Gen Enterprise Order & Queue Monitor for NBERM.">
 
-  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
 
   <title>NBERM Dashboard &bull; Live Orders Monitor</title>
 
@@ -2098,7 +2098,7 @@
     // --- SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
   </script>
