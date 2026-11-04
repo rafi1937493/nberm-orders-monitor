@@ -938,41 +938,148 @@
     }
 
     @media (max-width: 768px) {
-      .floating-bottom-nav {
-        display: flex;
+      body {
+        padding: max(10px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom)) 12px !important;
       }
       .app-shell {
-        padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+        gap: 12px !important;
+        padding-bottom: calc(105px + env(safe-area-inset-bottom, 0px)) !important;
       }
-      .top-navbar .nav-pills {
-        display: none !important; /* Move to floating bottom nav on phone */
-      }
+
+      /* 1. Symmetrical Top Navbar */
       .top-navbar {
         flex-direction: row !important;
         justify-content: space-between !important;
         align-items: center !important;
+        padding: 9px 12px !important;
+        border-radius: 16px !important;
+        gap: 8px !important;
+      }
+      .top-navbar .nav-pills {
+        display: none !important;
       }
       .nav-brand {
         justify-content: flex-start;
+        gap: 10px !important;
+        min-width: 0;
+      }
+      .brand-icon-wrap {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 9px !important;
+      }
+      .brand-name {
+        font-size: 16px !important;
+        line-height: 1.1;
+      }
+      .brand-sub {
+        font-size: 10px !important;
+        white-space: nowrap;
       }
       .nav-actions {
         justify-content: flex-end;
+        align-items: center;
+        gap: 6px !important;
+        flex-shrink: 0;
       }
+      .live-pill {
+        padding: 4px 8px !important;
+        font-size: 10px !important;
+        gap: 5px !important;
+      }
+      .live-dot {
+        width: 6px !important;
+        height: 6px !important;
+      }
+      .icon-btn {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+      }
+      /* Hide redundant icons on phone to guarantee perfect balance & zero cutoff */
+      #fullscreen-btn,
+      #refresh-icon-btn {
+        display: none !important;
+      }
+
+      /* 2. Symmetrical Dashboard Subheader */
+      .dashboard-subheader {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 2px 4px !important;
+        gap: 8px !important;
+      }
+      .subheader-left {
+        gap: 8px !important;
+      }
+      .page-title {
+        font-size: 22px !important;
+        letter-spacing: -0.3px !important;
+      }
+      .sync-badge {
+        font-size: 11px !important;
+        padding: 4px 10px !important;
+        border-radius: 8px !important;
+      }
+
+      /* 3. 2x2 Balanced KPI Grid */
       .kpi-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
       }
+      .kpi-card {
+        padding: 13px 14px !important;
+        border-radius: 16px !important;
+        gap: 8px !important;
+      }
+      .kpi-card-header {
+        align-items: center;
+      }
+      .kpi-label {
+        font-size: 11px !important;
+      }
+      .kpi-icon-pill {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 7px !important;
+      }
+      .kpi-icon-pill svg {
+        width: 13px !important;
+        height: 13px !important;
+      }
+      .kpi-number {
+        font-size: 28px !important;
+        margin-bottom: 2px;
+      }
+      #kpi-ratio {
+        font-size: 22px !important;
+      }
+      .kpi-trend {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+      }
+
+      /* 4. Middle Section & Distribution */
       .distribution-content {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
+        gap: 18px !important;
+      }
+      .analytics-card {
+        padding: 16px !important;
+        border-radius: 18px !important;
       }
       .queues-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
       }
-      .dashboard-subheader {
-        flex-direction: column;
-        align-items: flex-start;
+      .queue-detailed-card {
+        padding: 16px !important;
+        border-radius: 18px !important;
       }
       .bottom-bar {
-        margin-bottom: 20px;
+        margin-bottom: 16px !important;
+        padding: 10px 14px !important;
       }
 
       /* Phone / PWA Dedicated Tabbed Views (Zero Long Scroll) */
