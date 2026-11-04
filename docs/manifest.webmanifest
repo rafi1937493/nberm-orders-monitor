@@ -2,8 +2,9 @@
   "name": "NBERM Orders Monitor",
   "short_name": "Orders",
   "description": "Live queue and locked orders monitor",
-  "start_url": "/",
-  "id": "/",
+  "start_url": "./",
+  "scope": "./",
+  "id": "nberm-orders-monitor-pwa",
   "display": "standalone",
   "background_color": "#090d16",
   "theme_color": "#090d16",
@@ -15,25 +16,25 @@
   ],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-maskable-512.png",
+      "src": "./icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/logo.svg",
+      "src": "./logo.svg",
       "sizes": "any",
       "type": "image/svg+xml"
     }
