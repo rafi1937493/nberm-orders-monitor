@@ -6,8 +6,8 @@
  * - Bulletproof error suppression for unmounted tabs and port disconnects.
  */
 
-const SUPABASE_URL = 'https://qloghdvzdvdaecvggtuh.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_sp8meDyllLX-AKO_Xsnw4A_6M9XazTb';
+const SUPABASE_URL = 'https://atckbreoadvmzpllsfjl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_UagRupbU-ur550mE1_E-aA_IG4KC1rB';
 const VERCEL_URL = 'https://nberm-orders-monitor.vercel.app';
 
 // Create persistent periodic heartbeat alarm (every 0.5 minutes = 30 seconds)

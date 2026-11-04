@@ -7,8 +7,8 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://qloghdvzdvdaecvggtuh.supabase.co';
-  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || 'sb_publishable_sp8meDyllLX-AKO_Xsnw4A_6M9XazTb';
+  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://atckbreoadvmzpllsfjl.supabase.co';
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || 'sb_publishable_UagRupbU-ur550mE1_E-aA_IG4KC1rB';
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
