@@ -145,13 +145,22 @@
     }
     .nav-pill:hover {
       color: #ffffff;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
     }
     .nav-pill.active {
       background: linear-gradient(135deg, #f59e0b, #d97706);
       color: #ffffff;
       box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
       font-weight: 700;
+    }
+    .nav-pill[data-tab="approval"].active {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      box-shadow: 0 2px 12px rgba(14, 165, 233, 0.45);
+    }
+    .nav-pill[data-tab="design"].active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 2px 12px rgba(245, 158, 11, 0.45);
     }
 
     /* Right Action Bar */
@@ -614,34 +623,34 @@
     }
     .queue-detailed-card.design.highlight-focus {
       border-color: #f59e0b !important;
-      animation: cardPulseGlowAmber 2s ease-in-out infinite alternate;
+      animation: cardPulseGlowAmber 1.4s ease-in-out infinite alternate;
     }
     .queue-detailed-card.approval.highlight-focus {
       border-color: #38bdf8 !important;
-      animation: cardPulseGlowCyan 2s ease-in-out infinite alternate;
+      animation: cardPulseGlowCyan 1.4s ease-in-out infinite alternate;
     }
 
     @keyframes cardPulseGlowAmber {
       0% {
-        box-shadow: 0 0 18px rgba(245, 158, 11, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 0 14px rgba(245, 158, 11, 0.4), 0 0 0 1px rgba(245, 158, 11, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
       }
       50% {
-        box-shadow: 0 0 42px rgba(245, 158, 11, 0.65), 0 18px 45px rgba(0, 0, 0, 0.7);
+        box-shadow: 0 0 45px rgba(245, 158, 11, 0.85), 0 0 18px rgba(245, 158, 11, 0.6), 0 16px 45px rgba(0, 0, 0, 0.7);
       }
       100% {
-        box-shadow: 0 0 24px rgba(245, 158, 11, 0.4), 0 12px 35px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), 0 0 4px rgba(245, 158, 11, 0.4), 0 10px 28px rgba(0, 0, 0, 0.5);
       }
     }
 
     @keyframes cardPulseGlowCyan {
       0% {
-        box-shadow: 0 0 18px rgba(56, 189, 248, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.4), 0 0 0 1px rgba(56, 189, 248, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
       }
       50% {
-        box-shadow: 0 0 42px rgba(56, 189, 248, 0.65), 0 18px 45px rgba(0, 0, 0, 0.7);
+        box-shadow: 0 0 45px rgba(56, 189, 248, 0.85), 0 0 18px rgba(56, 189, 248, 0.6), 0 16px 45px rgba(0, 0, 0, 0.7);
       }
       100% {
-        box-shadow: 0 0 24px rgba(56, 189, 248, 0.4), 0 12px 35px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.5), 0 0 4px rgba(56, 189, 248, 0.4), 0 10px 28px rgba(0, 0, 0, 0.5);
       }
     }
     .queue-detailed-card::before {
@@ -1079,6 +1088,9 @@
       .queue-detailed-card {
         padding: 16px !important;
         border-radius: 18px !important;
+      }
+      .queue-detailed-card.highlight-focus {
+        transform: none !important;
       }
       .bottom-bar {
         margin-bottom: 16px !important;
@@ -1635,13 +1647,25 @@
     });
 
     let currentMobileTab = 'dashboard';
+    let isProgrammaticNav = false;
+    let navScrollTimer = null;
 
     function selectNavTab(tabName, event) {
-      if (event) event.preventDefault();
+      if (event) {
+        try { event.preventDefault(); } catch (e) {}
+        try { event.stopPropagation(); } catch (e) {}
+      }
       if (tabName === 'refresh') {
         triggerManualRefresh();
         return;
       }
+
+      // Lock programmatic nav so smooth scrolling does NOT let the scroll listener revert the tab or strip glow
+      isProgrammaticNav = true;
+      if (navScrollTimer) clearTimeout(navScrollTimer);
+      navScrollTimer = setTimeout(() => {
+        isProgrammaticNav = false;
+      }, 1200);
 
       currentMobileTab = tabName;
       document.body.setAttribute('data-mobile-tab', tabName);
@@ -1653,7 +1677,7 @@
       const activePills = document.querySelectorAll(`[data-tab="${tabName}"]`);
       activePills.forEach(p => p.classList.add('active'));
 
-      // 2. Remove focus highlights from both cards
+      // 2. Remove focus highlights from both cards before applying target
       const appCard = document.getElementById('approval-card');
       const desCard = document.getElementById('design-card');
       if (appCard) appCard.classList.remove('highlight-focus');
@@ -1674,16 +1698,25 @@
       // 4. Handle navigation & dedicated view switching
       if (isMobile) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (tabName === 'design' && desCard) {
+          void desCard.offsetWidth; // Force CSS reflow to re-trigger pulse/blink keyframes
+          desCard.classList.add('highlight-focus');
+        } else if (tabName === 'approval' && appCard) {
+          void appCard.offsetWidth; // Force CSS reflow to re-trigger pulse/blink keyframes
+          appCard.classList.add('highlight-focus');
+        }
       } else {
         if (tabName === 'dashboard') {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (tabName === 'design') {
           if (desCard) {
+            void desCard.offsetWidth; // Force reflow so keyframe blink starts on the same spot immediately
             desCard.classList.add('highlight-focus');
             desCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         } else if (tabName === 'approval') {
           if (appCard) {
+            void appCard.offsetWidth; // Force reflow so keyframe blink starts on the same spot immediately
             appCard.classList.add('highlight-focus');
             appCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
@@ -1703,6 +1736,8 @@
     window.addEventListener('scroll', () => {
       // Don't override mobile tabs on scroll
       if (window.innerWidth <= 768) return;
+      // Don't cancel programmatic scroll or card highlight during smooth scroll
+      if (isProgrammaticNav) return;
 
       if (window.scrollY < 80) {
         const active = document.querySelector('.nav-pill.active, .float-nav-item.active');
