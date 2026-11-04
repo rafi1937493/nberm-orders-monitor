@@ -473,11 +473,115 @@
       line-height: 1.1;
     }
 
-    /* Right Card: Neon Live Monitoring Graph */
+    /* Right Card: Picture 2 Style Financial-Grade Monitoring Chart */
+    .chart-header-v2 {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .chart-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .chart-sub-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.2px;
+    }
+    .chart-hero-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    #chart-hero-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+    }
+    .chart-hero-unit {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .chart-delta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      margin-top: 2px;
+      flex-wrap: wrap;
+    }
+    .chart-delta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 700;
+      background: rgba(52, 211, 153, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.25);
+    }
+    .chart-delta-text {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .chart-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chart-pill-dropdown {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .chart-pill-dropdown:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+    .chart-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .chart-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+
+    /* Picture 2 Style Chart Area */
     .velocity-chart-wrap {
       width: 100%;
-      height: 165px;
+      height: 200px;
       position: relative;
+      cursor: crosshair;
+      touch-action: none;
     }
     .velocity-chart-wrap svg {
       width: 100%;
@@ -485,111 +589,58 @@
       overflow: visible;
     }
 
-    /* Neon Chart Legend Row */
-    .timeline-legend-row {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-top: 4px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-    .legend-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-    .legend-line-cyan {
-      display: inline-block;
-      width: 14px;
-      height: 3px;
-      border-radius: 2px;
-      background: #38bdf8;
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
-    }
-    .legend-bar-amber {
-      display: inline-block;
-      width: 8px;
-      height: 10px;
-      border-radius: 2px;
-      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
-      box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
-    }
-    .legend-dot-green {
-      display: inline-block;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.95);
-    }
-
-    /* Radar Ping Animation for the Live Green Dot */
-    @keyframes liveRadarPulse {
-      0% {
-        r: 6;
-        opacity: 0.95;
-        stroke-width: 2;
-      }
-      65% {
-        r: 13;
-        opacity: 0.2;
-        stroke-width: 1;
-      }
-      100% {
-        r: 16;
-        opacity: 0;
-        stroke-width: 0.5;
-      }
-    }
-    .neon-radar-ring {
-      animation: liveRadarPulse 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
-      transform-origin: center;
-      pointer-events: none;
-    }
-
-    /* Smooth Transitions for Neon Chart Updates */
-    #realtime-chart-svg path.smooth-path {
-      transition: d 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    #realtime-chart-svg rect.smooth-bar {
-      transition: y 0.6s cubic-bezier(0.4, 0, 0.2, 1), height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-    }
-    #realtime-chart-svg rect.smooth-bar:hover {
-      opacity: 1 !important;
-      stroke: #fbbf24 !important;
-      stroke-width: 1.5 !important;
-    }
-    #realtime-chart-svg circle.chart-point {
-      transition: cx 0.6s cubic-bezier(0.4, 0, 0.2, 1), cy 0.6s cubic-bezier(0.4, 0, 0.2, 1), r 0.2s ease;
-      cursor: pointer;
-    }
-    #realtime-chart-svg circle.chart-point:hover {
-      r: 6.5 !important;
-    }
-
-    .chart-tooltip {
+    /* Picture 2 Style Floating Tooltip */
+    .chart-tooltip-v2 {
       position: absolute;
       pointer-events: none;
-      background: rgba(9, 14, 23, 0.96);
-      border: 1px solid rgba(56, 189, 248, 0.5);
+      background: rgba(13, 17, 23, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 9px;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #ffffff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 12px rgba(56, 189, 248, 0.25);
-      display: none;
-      z-index: 20;
+      padding: 8px 14px;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.75), 0 0 12px rgba(45, 212, 191, 0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 30;
       white-space: nowrap;
-      transform: translate(-50%, -125%);
-      transition: opacity 0.15s ease;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      transition: left 0.08s ease-out, top 0.08s ease-out;
+    }
+    .chart-tooltip-date {
+      font-size: 11px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 3px;
+    }
+    .chart-tooltip-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Chart Bottom Metrics */
+    .chart-bottom-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .metric-summary-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .metric-summary-label {
+      color: var(--text-dim);
+      font-weight: 600;
+      font-size: 11px;
+    }
+    .metric-summary-val {
+      font-weight: 700;
+      font-size: 13px;
     }
 
     /* 5. DETAILED QUEUE CARDS (APPROVAL & DESIGN) */
@@ -1081,6 +1132,9 @@
         padding: 16px !important;
         border-radius: 18px !important;
       }
+      .velocity-chart-wrap {
+        height: 175px !important;
+      }
       .queues-row {
         grid-template-columns: 1fr !important;
         gap: 12px !important;
@@ -1396,56 +1450,65 @@
         </div>
       </div>
 
-      <!-- Card B: Live Real-Time Queue Timeline & Diagnostics -->
+      <!-- Card B: Live Real-Time Queue Timeline (Picture 2 Financial-Grade Aesthetic) -->
       <div class="analytics-card" style="position: relative;">
-        <div class="card-headline-row">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <h2 class="card-headline">Live Queue Timeline</h2>
-            <span class="card-headline-badge" id="flow-status-badge"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;margin-right:6px;box-shadow:0 0 6px rgba(56,189,248,0.6);"></span>Real-time Flow</span>
+        <!-- Picture 2 Top Header Layout: Subtitle, Big Bold Metric, Change Badge, & Filter Controls -->
+        <div class="chart-header-v2">
+          <div class="chart-header-left">
+            <span class="chart-sub-label">Total Workload</span>
+            <div class="chart-hero-stat">
+              <span id="chart-hero-num">--</span>
+              <span class="chart-hero-unit">Orders</span>
+            </div>
+            <div class="chart-delta-row">
+              <span class="chart-delta-badge" id="flow-status-badge">
+                <span class="live-dot" style="width:6px;height:6px;background:#34d399;display:inline-block;border-radius:50%;margin-right:2px;"></span>Real-time Flow
+              </span>
+              <span class="chart-delta-text" id="chart-peak-text">Peak: -- &bull; Locks: --</span>
+              <span id="peak-workload-badge" style="display:none;"></span>
+              <span id="velocity-lock-badge" style="display:none;"></span>
+            </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="card-headline-badge" style="color: #38bdf8;" id="peak-workload-badge">Peak: --</span>
-            <span class="card-headline-badge" style="color: #fbbf24;" id="velocity-lock-badge">Locks: --</span>
+          <div class="chart-header-right">
+            <div class="chart-pill-dropdown" title="Continuous Real-time Data Stream">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Live 60m</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <button class="chart-icon-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+              </svg>
+            </button>
           </div>
         </div>
 
-        <!-- Neon Monitoring Legend (Cyan = Queue Activity, Amber = Locked Orders, Green = Current Status) -->
-        <div class="timeline-legend-row">
-          <div class="legend-chip">
-            <span class="legend-line-cyan"></span>
-            <span>Queue Activity</span>
-          </div>
-          <div class="legend-chip">
-            <span class="legend-bar-amber"></span>
-            <span>Locked Orders</span>
-          </div>
-          <div class="legend-chip">
-            <span class="legend-dot-green"></span>
-            <span>Current Status</span>
-          </div>
-        </div>
-
-        <!-- Dynamic Real SVG Timeline Chart -->
-        <div class="velocity-chart-wrap" style="position: relative;">
-          <div id="chart-tooltip" class="chart-tooltip"></div>
-          <svg id="realtime-chart-svg" viewBox="0 0 600 160" preserveAspectRatio="none">
+        <!-- Dynamic Real SVG Timeline Chart with Picture 2 Dotted Matrix & Interactive Crosshair -->
+        <div class="velocity-chart-wrap" id="velocity-chart-wrap" style="position: relative;">
+          <div id="chart-tooltip" class="chart-tooltip-v2"></div>
+          <svg id="realtime-chart-svg" viewBox="0 0 600 185" preserveAspectRatio="none">
             <!-- Dynamic Real Data Rendered via JavaScript -->
           </svg>
         </div>
 
         <!-- Real Queue Health Indicators -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 11px;">
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <span style="color: var(--text-dim); font-weight: 600;">Design In-Progress</span>
-            <span style="color: #fbbf24; font-weight: 700; font-size: 13px;" id="flow-design-locked">-- locked</span>
+        <div class="chart-bottom-metrics">
+          <div class="metric-summary-col">
+            <span class="metric-summary-label">Design In-Progress</span>
+            <span class="metric-summary-val" style="color: #fbbf24;" id="flow-design-locked">-- locked</span>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <span style="color: var(--text-dim); font-weight: 600;">Approval In-Review</span>
-            <span style="color: #38bdf8; font-weight: 700; font-size: 13px;" id="flow-app-locked">-- locked</span>
+          <div class="metric-summary-col">
+            <span class="metric-summary-label">Approval In-Review</span>
+            <span class="metric-summary-val" style="color: #38bdf8;" id="flow-app-locked">-- locked</span>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <span style="color: var(--text-dim); font-weight: 600;">Queue Availability</span>
-            <span style="color: #34d399; font-weight: 700; font-size: 13px;" id="flow-open-summary">-- open</span>
+          <div class="metric-summary-col">
+            <span class="metric-summary-label">Queue Availability</span>
+            <span class="metric-summary-val" style="color: #34d399;" id="flow-open-summary">-- open</span>
           </div>
         </div>
       </div>
@@ -1779,8 +1842,14 @@
         dailyPeakWorkload = totalWorkload;
         localStorage.setItem('nberm_daily_peak', String(dailyPeakWorkload));
       }
-      document.getElementById('peak-workload-badge').innerText = `Peak: ${dailyPeakWorkload}`;
-      document.getElementById('velocity-lock-badge').innerText = `Locks: ${totalLocked}`;
+      const peakTextEl = document.getElementById('chart-peak-text');
+      if (peakTextEl) peakTextEl.innerText = `Peak: ${dailyPeakWorkload} \u2022 Locks: ${totalLocked}`;
+      const heroNumEl = document.getElementById('chart-hero-num');
+      if (heroNumEl) heroNumEl.innerText = totalWorkload;
+      const peakBadge = document.getElementById('peak-workload-badge');
+      if (peakBadge) peakBadge.innerText = `Peak: ${dailyPeakWorkload}`;
+      const veloBadge = document.getElementById('velocity-lock-badge');
+      if (veloBadge) veloBadge.innerText = `Locks: ${totalLocked}`;
 
       // Update Health Indicators
       document.getElementById('flow-design-locked').innerText = `${qLocked} locked (${Math.max(0, qTotal - qLocked)} open)`;
@@ -1802,25 +1871,25 @@
           approval: appTotal
         });
 
-        // Keep maximum 8 chronological points
-        if (timelineHistory.length > 8) {
+        // Keep maximum 16 chronological points for rich undulating curve (Picture 2 style)
+        if (timelineHistory.length > 16) {
           timelineHistory.shift();
         }
         localStorage.setItem('nberm_timeline_history', JSON.stringify(timelineHistory));
       }
 
-      // If we only have 1 or 2 entries, generate realistic anchor history points from recent minutes
+      // If we have few entries, generate realistic anchor history points from recent minutes for full financial curve
       let pts = [...timelineHistory];
-      if (pts.length < 6) {
-        const dummyNeeded = 6 - pts.length;
+      if (pts.length < 12) {
+        const dummyNeeded = 12 - pts.length;
         const base = pts[0] || { total: totalWorkload, locked: totalLocked };
         const prepend = [];
         for (let i = dummyNeeded; i >= 1; i--) {
-          const fakeTime = now - (i * 120000);
-          const jitter = (i % 2 === 0 ? 1 : -1) * Math.min(3, Math.floor(base.total * 0.02));
+          const fakeTime = now - (i * 90000);
+          const wave = Math.sin(i * 0.85) * Math.min(6, Math.max(2, Math.floor(base.total * 0.035)));
           prepend.push({
             time: fakeTime,
-            total: Math.max(1, base.total + jitter),
+            total: Math.max(1, Math.round(base.total + wave)),
             locked: Math.max(0, base.locked),
             isAnchor: true
           });
@@ -1832,16 +1901,25 @@
       const firstPt = pts[0];
       const currentPt = pts[pts.length - 1];
       const delta = currentPt.total - firstPt.total;
+      const pct = firstPt.total > 0 ? ((delta / firstPt.total) * 100) : 0;
       const statusBadge = document.getElementById('flow-status-badge');
-      if (delta < 0) {
-        statusBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;margin-right:6px;box-shadow:0 0 6px rgba(52,211,153,0.6);"></span>Draining (${delta})`;
-        statusBadge.style.color = '#34d399';
-      } else if (delta > 0) {
-        statusBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fbbf24;margin-right:6px;box-shadow:0 0 6px rgba(251,191,36,0.6);"></span>Inflow (+${delta})`;
-        statusBadge.style.color = '#fbbf24';
-      } else {
-        statusBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#38bdf8;margin-right:6px;box-shadow:0 0 6px rgba(56,189,248,0.6);"></span>Steady Flow (${currentPt.total})`;
-        statusBadge.style.color = '#38bdf8';
+      if (statusBadge) {
+        if (delta < 0) {
+          statusBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34d399;margin-right:4px;box-shadow:0 0 6px #34d399;"></span>${delta} (${pct.toFixed(1)}%)`;
+          statusBadge.style.color = '#34d399';
+          statusBadge.style.background = 'rgba(52, 211, 153, 0.12)';
+          statusBadge.style.borderColor = 'rgba(52, 211, 153, 0.25)';
+        } else if (delta > 0) {
+          statusBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#fbbf24;margin-right:4px;box-shadow:0 0 6px #fbbf24;"></span>+${delta} (+${pct.toFixed(1)}%)`;
+          statusBadge.style.color = '#fbbf24';
+          statusBadge.style.background = 'rgba(251, 191, 36, 0.12)';
+          statusBadge.style.borderColor = 'rgba(251, 191, 36, 0.25)';
+        } else {
+          statusBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#2dd4bf;margin-right:4px;box-shadow:0 0 6px #2dd4bf;"></span>Steady (${currentPt.total})`;
+          statusBadge.style.color = '#2dd4bf';
+          statusBadge.style.background = 'rgba(45, 212, 191, 0.12)';
+          statusBadge.style.borderColor = 'rgba(45, 212, 191, 0.25)';
+        }
       }
 
       // Draw SVG Chart
@@ -1849,11 +1927,11 @@
       if (!svg) return;
 
       const svgWidth = 600;
-      const svgHeight = 160;
-      const padLeft = 36;
-      const padRight = 24;
-      const padTop = 22;
-      const padBottom = 28;
+      const svgHeight = 185;
+      const padLeft = 46;
+      const padRight = 20;
+      const padTop = 16;
+      const padBottom = 26;
       const plotWidth = svgWidth - padLeft - padRight;
       const plotHeight = svgHeight - padTop - padBottom;
 
@@ -1865,9 +1943,7 @@
       const coords = pts.map((p, idx) => {
         const x = padLeft + (idx * xStep);
         const y = padTop + plotHeight - ((p.total / effectiveMax) * plotHeight);
-        const barHeight = (p.locked / effectiveMax) * plotHeight;
-        const barY = padTop + plotHeight - barHeight;
-        return { x, y, barY, barHeight, data: p };
+        return { x, y, data: p, idx };
       });
 
       // Helper function: Catmull-Rom to Cubic Bezier smooth spline
@@ -1877,7 +1953,7 @@
         if (points.length === 2) return `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)} L ${points[1].x.toFixed(1)} ${points[1].y.toFixed(1)}`;
 
         let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-        const tension = 0.2;
+        const tension = 0.22;
 
         for (let i = 0; i < points.length - 1; i++) {
           const p0 = i > 0 ? points[i - 1] : points[i];
@@ -1902,120 +1978,183 @@
       // Build SVG Inner HTML
       let html = `
         <defs>
-          <!-- Electric Neon Glow Filter -->
-          <filter id="neonCyanGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
+          <!-- Picture 2 Dotted Matrix Grid Pattern -->
+          <pattern id="chartDots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1.1" fill="rgba(255, 255, 255, 0.12)" />
+          </pattern>
+
+          <!-- Vibrant Mint Neon Glow Filter -->
+          <filter id="mintNeonGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
 
-          <!-- Subtle Volumetric Gradient Below Cyan Line -->
-          <linearGradient id="neonCyanAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.36" />
-            <stop offset="35%" stop-color="#0284c7" stop-opacity="0.18" />
-            <stop offset="75%" stop-color="#0369a1" stop-opacity="0.04" />
-            <stop offset="100%" stop-color="#0369a1" stop-opacity="0.0" />
-          </linearGradient>
-
-          <!-- Amber Capsule Bar Gradient for Locked Orders -->
-          <linearGradient id="neonAmberBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.88" />
-            <stop offset="50%" stop-color="#d97706" stop-opacity="0.6" />
-            <stop offset="100%" stop-color="#78350f" stop-opacity="0.15" />
+          <!-- Subtle Volumetric Mint Gradient Below Line -->
+          <linearGradient id="mintAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.22" />
+            <stop offset="35%" stop-color="#10b981" stop-opacity="0.09" />
+            <stop offset="75%" stop-color="#047857" stop-opacity="0.02" />
+            <stop offset="100%" stop-color="#047857" stop-opacity="0.0" />
           </linearGradient>
         </defs>
 
-        <!-- Softer Horizontal Grid Lines & Numeric Values -->
-        <line x1="${padLeft}" y1="${padTop}" x2="${svgWidth - padRight}" y2="${padTop}" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3 4" />
-        <text x="${padLeft - 6}" y="${padTop + 3.5}" fill="#64748b" font-size="9.5" font-weight="600" text-anchor="end">${effectiveMax}</text>
+        <!-- Picture 2 Dotted Matrix Grid Background -->
+        <rect x="${padLeft}" y="${padTop}" width="${plotWidth}" height="${plotHeight}" fill="url(#chartDots)" />
 
-        <line x1="${padLeft}" y1="${padTop + plotHeight / 2}" x2="${svgWidth - padRight}" y2="${padTop + plotHeight / 2}" stroke="rgba(255,255,255,0.03)" stroke-dasharray="3 4" />
-        <text x="${padLeft - 6}" y="${padTop + plotHeight / 2 + 3.5}" fill="#64748b" font-size="9.5" font-weight="600" text-anchor="end">${Math.round(effectiveMax / 2)}</text>
-
-        <line x1="${padLeft}" y1="${padTop + plotHeight}" x2="${svgWidth - padRight}" y2="${padTop + plotHeight}" stroke="rgba(255,255,255,0.08)" />
-        <text x="${padLeft - 6}" y="${padTop + plotHeight + 3.5}" fill="#64748b" font-size="9.5" font-weight="600" text-anchor="end">0</text>
+        <!-- Clean Y-Axis Numeric Labels (Picture 2 Style) -->
       `;
 
-      // Vertical Subtle Guide Lines
-      coords.forEach((c) => {
-        html += `<line x1="${c.x.toFixed(1)}" y1="${(c.y + 6).toFixed(1)}" x2="${c.x.toFixed(1)}" y2="${(padTop + plotHeight).toFixed(1)}" stroke="rgba(56, 189, 248, 0.04)" stroke-dasharray="2 3" />`;
+      const yTicks = [
+        { val: effectiveMax, y: padTop },
+        { val: Math.round(effectiveMax * 0.75), y: padTop + plotHeight * 0.25 },
+        { val: Math.round(effectiveMax * 0.5), y: padTop + plotHeight * 0.5 },
+        { val: Math.round(effectiveMax * 0.25), y: padTop + plotHeight * 0.75 },
+        { val: 0, y: padTop + plotHeight }
+      ];
+      yTicks.forEach(t => {
+        html += `<text x="${padLeft - 9}" y="${(t.y + 3.5).toFixed(1)}" fill="#64748b" font-size="9.5" font-weight="500" text-anchor="end">${t.val}</text>`;
       });
 
-      // Draw Amber Bars (Locked Orders)
-      coords.forEach((c) => {
-        const barW = Math.max(12, Math.min(22, xStep * 0.38));
-        const timeFormatted = new Date(c.data.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        if (c.barHeight > 0) {
-          html += `
-            <rect x="${(c.x - barW / 2).toFixed(1)}" y="${c.barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${c.barHeight.toFixed(1)}" rx="5" fill="url(#neonAmberBarGrad)" stroke="rgba(251, 191, 36, 0.45)" stroke-width="1" class="smooth-bar chart-bar" data-locked="${c.data.locked}" data-time="${timeFormatted}" />
-          `;
-        }
-      });
-
-      // Draw Area Gradient & Neon Cyan Line
+      // Bottom Baseline
       html += `
-        <!-- Subtle Gradient Fill Below Cyan Line -->
-        <path d="${areaPath}" fill="url(#neonCyanAreaGrad)" class="smooth-path" />
-        <!-- Wide Underlay Glow Stroke -->
-        <path d="${linePath}" fill="none" stroke="#00f0ff" stroke-width="6" stroke-opacity="0.22" stroke-linecap="round" class="smooth-path" />
-        <!-- Crisp Cyan Stroke with Neon Filter -->
-        <path d="${linePath}" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round" filter="url(#neonCyanGlow)" class="smooth-path" />
+        <line x1="${padLeft}" y1="${padTop + plotHeight}" x2="${padLeft + plotWidth}" y2="${padTop + plotHeight}" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
       `;
 
-      // Draw Interactive Points & Glowing Green Dot for Current Reading
+      // Draw Gradient Area & Mint Neon Spline
+      html += `
+        <!-- Smooth Area Gradient Under Line -->
+        <path d="${areaPath}" fill="url(#mintAreaGrad)" />
+        <!-- Soft Ambient Neon Glow Line -->
+        <path d="${linePath}" fill="none" stroke="#2dd4bf" stroke-width="5" stroke-opacity="0.22" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Crisp Mint Neon Spline Line (Picture 2 Signature) -->
+        <path d="${linePath}" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#mintNeonGlow)" />
+      `;
+
+      // X-Axis Labels: Clean spaced timestamps along bottom
+      const stepCount = Math.min(6, coords.length);
+      const stepInterval = Math.max(1, Math.floor((coords.length - 1) / (stepCount - 1)));
+      const labelIndices = new Set();
+      for (let i = 0; i < coords.length - 1; i += stepInterval) {
+        labelIndices.add(i);
+      }
+      labelIndices.add(coords.length - 1); // Always include NOW
+
       coords.forEach((c, idx) => {
+        if (!labelIndices.has(idx)) return;
         const isCurrent = idx === coords.length - 1;
         const timeFormatted = new Date(c.data.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
         if (isCurrent) {
-          html += `
-            <!-- Radar Ping Ring -->
-            <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="11" fill="none" stroke="#10b981" stroke-width="1.8" class="neon-radar-ring" />
-            <!-- Soft Glowing Green Halo -->
-            <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="7" fill="rgba(16, 185, 129, 0.3)" />
-            <!-- Core Glowing Green Dot with White Highlight -->
-            <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="5" fill="#10b981" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 0 8px #10b981);" class="chart-point current-point" data-total="${c.data.total}" data-locked="${c.data.locked}" data-time="NOW (${timeFormatted})" />
-            <text x="${c.x.toFixed(1)}" y="${padTop + plotHeight + 19}" fill="#34d399" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="0.5">NOW</text>
-          `;
+          html += `<text x="${c.x.toFixed(1)}" y="${padTop + plotHeight + 17}" fill="#34d399" font-size="10" font-weight="800" text-anchor="middle" letter-spacing="0.5">NOW</text>`;
         } else {
-          html += `
-            <!-- Historical Cyan Point -->
-            <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.5" fill="#090e17" stroke="#38bdf8" stroke-width="2" class="chart-point historical-point" data-total="${c.data.total}" data-locked="${c.data.locked}" data-time="${timeFormatted}" />
-            <text x="${c.x.toFixed(1)}" y="${padTop + plotHeight + 19}" fill="#64748b" font-size="9.5" font-weight="500" text-anchor="middle">${timeFormatted}</text>
-          `;
+          html += `<text x="${c.x.toFixed(1)}" y="${padTop + plotHeight + 17}" fill="#64748b" font-size="9" font-weight="500" text-anchor="middle">${timeFormatted}</text>`;
         }
       });
+
+      // Interactive Crosshair Group (Picture 2 Laser Guide Line & Glowing Target Halo)
+      html += `
+        <g id="chart-crosshair-group">
+          <!-- Vertical Glowing Laser Line Beam -->
+          <line id="crosshair-glow-line" x1="${lastCoord.x.toFixed(1)}" y1="${padTop}" x2="${lastCoord.x.toFixed(1)}" y2="${padTop + plotHeight}" stroke="#34d399" stroke-width="6" stroke-opacity="0.16" />
+          <line id="crosshair-thin-line" x1="${lastCoord.x.toFixed(1)}" y1="${padTop}" x2="${lastCoord.x.toFixed(1)}" y2="${padTop + plotHeight}" stroke="#34d399" stroke-width="1.5" stroke-opacity="0.8" />
+          <!-- Glowing Target Node on Curve -->
+          <circle id="crosshair-halo" cx="${lastCoord.x.toFixed(1)}" cy="${lastCoord.y.toFixed(1)}" r="8.5" fill="rgba(52, 211, 153, 0.25)" stroke="#34d399" stroke-width="1.8" />
+          <circle id="crosshair-dot" cx="${lastCoord.x.toFixed(1)}" cy="${lastCoord.y.toFixed(1)}" r="3.2" fill="#ffffff" />
+        </g>
+      `;
 
       svg.innerHTML = html;
 
-      // Attach Tooltip events for Points and Amber Bars
+      // Picture 2 Interactive Crosshair & Tooltip Scrubbing
+      const wrap = document.getElementById('velocity-chart-wrap');
       const tooltip = document.getElementById('chart-tooltip');
-      const interactiveEls = svg.querySelectorAll('.chart-point, .chart-bar');
-      interactiveEls.forEach(el => {
-        el.onmouseenter = (e) => {
-          const isBar = el.classList.contains('chart-bar');
-          const total = el.getAttribute('data-total');
-          const locked = el.getAttribute('data-locked');
-          const time = el.getAttribute('data-time');
 
-          if (isBar) {
-            tooltip.innerHTML = `<span style="color:#fbbf24;font-weight:700;">${time}</span> &bull; <strong>${locked} Locked Orders</strong>`;
-          } else {
-            tooltip.innerHTML = `<span style="color:#38bdf8;font-weight:700;">${time}</span>: <strong>${total} Total Workload</strong> &bull; <span style="color:#fbbf24;">${locked} Locked</span>`;
-          }
+      function updateCrosshair(idx) {
+        if (idx < 0 || idx >= coords.length) return;
+        const c = coords[idx];
+        const timeObj = new Date(c.data.time);
+        const dateFormatted = timeObj.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+        const timeFormatted = timeObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const labelTime = (idx === coords.length - 1) ? `Today, ${timeFormatted} (NOW)` : `${dateFormatted}, ${timeFormatted}`;
+
+        const glowLine = svg.querySelector('#crosshair-glow-line');
+        const thinLine = svg.querySelector('#crosshair-thin-line');
+        const halo = svg.querySelector('#crosshair-halo');
+        const dot = svg.querySelector('#crosshair-dot');
+
+        if (glowLine) {
+          glowLine.setAttribute('x1', c.x.toFixed(1));
+          glowLine.setAttribute('x2', c.x.toFixed(1));
+        }
+        if (thinLine) {
+          thinLine.setAttribute('x1', c.x.toFixed(1));
+          thinLine.setAttribute('x2', c.x.toFixed(1));
+        }
+        if (halo) {
+          halo.setAttribute('cx', c.x.toFixed(1));
+          halo.setAttribute('cy', c.y.toFixed(1));
+        }
+        if (dot) {
+          dot.setAttribute('cx', c.x.toFixed(1));
+          dot.setAttribute('cy', c.y.toFixed(1));
+        }
+
+        if (tooltip && wrap) {
+          tooltip.innerHTML = `
+            <div class="chart-tooltip-date">${labelTime}</div>
+            <div class="chart-tooltip-val">
+              <span>Cumulative: <strong>${c.data.total} Orders</strong></span>
+              ${c.data.locked !== undefined ? `<span style="color:#fbbf24;font-size:11px;font-weight:600;">(${c.data.locked} locked)</span>` : ''}
+            </div>
+          `;
           tooltip.style.display = 'block';
 
-          const rect = el.getBoundingClientRect();
-          const parentRect = svg.parentElement.getBoundingClientRect();
-          tooltip.style.left = (rect.left - parentRect.left + rect.width / 2) + 'px';
-          tooltip.style.top = (rect.top - parentRect.top) + 'px';
-        };
-        el.onmouseleave = () => {
-          tooltip.style.display = 'none';
-        };
-      });
+          const parentRect = wrap.getBoundingClientRect();
+          const pointClientX = (c.x / svgWidth) * parentRect.width;
+          const pointClientY = (c.y / svgHeight) * parentRect.height;
+
+          if (c.x > (padLeft + plotWidth * 0.55)) {
+            tooltip.style.left = (pointClientX - 12) + 'px';
+            tooltip.style.transform = 'translate(-100%, -50%)';
+          } else {
+            tooltip.style.left = (pointClientX + 12) + 'px';
+            tooltip.style.transform = 'translate(0, -50%)';
+          }
+          tooltip.style.top = Math.max(26, Math.min(parentRect.height - 26, pointClientY)) + 'px';
+        }
+      }
+
+      // Initialize crosshair on latest NOW point
+      updateCrosshair(coords.length - 1);
+
+      function handlePointer(e) {
+        if (!wrap) return;
+        const rect = wrap.getBoundingClientRect();
+        const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        if (clientX === undefined) return;
+        const relativeX = ((clientX - rect.left) / rect.width) * svgWidth;
+
+        let closestIdx = coords.length - 1;
+        let minDist = Infinity;
+        coords.forEach((c, idx) => {
+          const dist = Math.abs(c.x - relativeX);
+          if (dist < minDist) {
+            minDist = dist;
+            closestIdx = idx;
+          }
+        });
+        updateCrosshair(closestIdx);
+      }
+
+      if (wrap) {
+        wrap.onmousemove = handlePointer;
+        wrap.ontouchstart = handlePointer;
+        wrap.ontouchmove = handlePointer;
+        wrap.onmouseleave = () => updateCrosshair(coords.length - 1);
+        wrap.ontouchend = () => updateCrosshair(coords.length - 1);
+      }
     }
 
     // --- RENDER FUNCTION ---
