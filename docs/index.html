@@ -9,10 +9,10 @@
   <meta name="theme-color" content="#090d16">
   <meta name="description" content="Next-Gen Enterprise Order & Queue Monitor for NBERM.">
 
-  <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png?v=3">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=3">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3">
+  <link rel="manifest" href="./manifest.webmanifest?v=3">
 
   <title>NBERM Dashboard &bull; Live Orders Monitor</title>
 
@@ -214,8 +214,17 @@
       color: #ffffff;
       border-color: rgba(255, 255, 255, 0.2);
     }
-    .icon-btn.rotating svg, #mobile-refresh-svg.rotating {
+    .icon-btn.rotating svg, #mobile-refresh-svg.rotating, .refresh-pill-btn.rotating svg {
       animation: spin 0.8s linear infinite;
+    }
+    .refresh-pill-btn.rotating {
+      opacity: 0.85;
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .sync-flash {
+      color: #34d399 !important;
+      text-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+      transition: all 0.3s ease;
     }
     @keyframes spin {
       100% { transform: rotate(360deg); }
@@ -2300,19 +2309,24 @@
     const SUPABASE_URL = 'https://atckbreoadvmzpllsfjl.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_UagRupbU-ur550mE1_E-aA_IG4KC1rB';
 
-    async function loadStatus() {
-      // 1. Direct fetch from Supabase REST API (Instant, live, zero serverless limits)
+    async function loadStatus(isManual = false) {
+      // 1. Direct fetch from Supabase REST API (Instant, live, cache-busted, zero serverless limits)
       try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders_status?id=eq.current&select=*&apikey=${SUPABASE_KEY}`, {
+        const cacheBuster = `&_t=${Date.now()}`;
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders_status?id=eq.current&select=*&apikey=${SUPABASE_KEY}${cacheBuster}`, {
           headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${SUPABASE_KEY}`
-          }
+          },
+          cache: 'no-store'
         });
         if (res.ok) {
           const rows = await res.json();
           if (Array.isArray(rows) && rows.length > 0 && rows[0]) {
             renderStats(rows[0]);
+            if (isManual) {
+              flashSyncFeedback();
+            }
             return;
           }
         }
@@ -2320,10 +2334,13 @@
 
       // 2. Secondary fallback
       try {
-        const res = await fetch('/api/orders?t=' + Date.now());
+        const res = await fetch('/api/orders?t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           renderStats(data);
+          if (isManual) {
+            flashSyncFeedback();
+          }
           return;
         }
       } catch (e) {}
@@ -2333,15 +2350,36 @@
       }
     }
 
+    function flashSyncFeedback() {
+      const badge = document.getElementById('sync-time-badge');
+      const footer = document.getElementById('footer-sync-time');
+      if (badge) {
+        badge.classList.add('sync-flash');
+        setTimeout(() => badge.classList.remove('sync-flash'), 1200);
+      }
+      if (footer) {
+        footer.classList.add('sync-flash');
+        setTimeout(() => footer.classList.remove('sync-flash'), 1200);
+      }
+    }
+
     function triggerManualRefresh() {
-      const btn = document.getElementById('refresh-icon-btn');
-      const mobileSvg = document.getElementById('mobile-refresh-svg');
-      if (btn) btn.classList.add('rotating');
-      if (mobileSvg) mobileSvg.classList.add('rotating');
-      loadStatus().finally(() => {
+      const btns = document.querySelectorAll('#refresh-icon-btn, .refresh-pill-btn, #mobile-refresh-svg');
+      btns.forEach(b => b.classList.add('rotating'));
+
+      const pillSpan = document.querySelector('.refresh-pill-btn span');
+      if (pillSpan) pillSpan.innerText = 'Refreshing...';
+
+      const footer = document.getElementById('footer-sync-time');
+      if (footer) footer.innerText = 'Checking Supabase...';
+
+      // Play soft refresh click chime if available
+      try { playSound('ping'); } catch (e) {}
+
+      loadStatus(true).finally(() => {
         setTimeout(() => {
-          if (btn) btn.classList.remove('rotating');
-          if (mobileSvg) mobileSvg.classList.remove('rotating');
+          btns.forEach(b => b.classList.remove('rotating'));
+          if (pillSpan) pillSpan.innerText = 'Refresh Now';
         }, 600);
       });
     }
@@ -2352,7 +2390,9 @@
     // --- SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=4').then((reg) => {
+          reg.update();
+        }).catch(() => {});
       });
     }
   </script>

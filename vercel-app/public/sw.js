@@ -1,17 +1,19 @@
-const CACHE_NAME = 'nberm-orders-v2';
+const CACHE_NAME = 'nberm-orders-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './manifest.webmanifest',
+  './manifest.webmanifest?v=3',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-maskable-512.png',
-  './favicon.png',
-  './logo.svg'
+  './icon-192.png?v=3',
+  './icon-512.png?v=3',
+  './icon-maskable-512.png?v=3',
+  './favicon.png?v=3',
+  './favicon-64.png?v=3',
+  './logo.svg?v=3'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       for (const asset of STATIC_ASSETS) {
@@ -19,7 +21,7 @@ self.addEventListener('install', (event) => {
           await cache.add(asset);
         } catch (e) {}
       }
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -44,6 +46,27 @@ self.addEventListener('fetch', (event) => {
   if (url.origin.includes('supabase.co') || url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Icons, manifests, and images: Network-first to ensure fresh icon updates
+  if (
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.webmanifest') ||
+    url.pathname.endsWith('.json') ||
+    url.pathname.endsWith('.svg')
+  ) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }

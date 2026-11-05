@@ -1,20 +1,27 @@
-const CACHE_NAME = 'nberm-orders-v1';
+const CACHE_NAME = 'nberm-orders-v4';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icons/logo.svg',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/apple-touch-icon.png',
-  '/favicon.png'
+  './',
+  './index.html',
+  './manifest.webmanifest?v=3',
+  './manifest.json',
+  './icon-192.png?v=3',
+  './icon-512.png?v=3',
+  './icon-maskable-512.png?v=3',
+  './favicon.png?v=3',
+  './favicon-64.png?v=3',
+  './logo.svg?v=3'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const asset of STATIC_ASSETS) {
+        try {
+          await cache.add(asset);
+        } catch (e) {}
+      }
+    })
   );
 });
 
@@ -35,16 +42,29 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // API calls: Network-first, fallback to cache
-  if (url.pathname.startsWith('/api/')) {
+  // Supabase or API calls: Network-first
+  if (url.origin.includes('supabase.co') || url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Icons, manifests, and images: Network-first to ensure fresh icon updates
+  if (
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.webmanifest') ||
+    url.pathname.endsWith('.json') ||
+    url.pathname.endsWith('.svg')
+  ) {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
-          return response;
+          return networkResponse;
         })
         .catch(() => caches.match(event.request))
     );
@@ -55,7 +75,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch in background to update cache
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
