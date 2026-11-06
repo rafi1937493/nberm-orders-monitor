@@ -1,7 +1,10 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.1.0 - Ultra-Fast Supabase Edition)
- * - Sub-Second Synchronization: Instant DOM MutationObserver + Action Click Triggers (<250ms)
- * - High-Frequency Active Desk Heartbeat: 3-Second Active Queue Checks
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.1.1 - Ultra-Fast Supabase Edition)
+ * - Sub-Second Synchronization: Instant DOM MutationObserver + Action Click Triggers (<200ms)
+ * - High-Frequency Active Desk Heartbeat: 3.5-Second Active Queue Checks
+ * - Dual-Queue Live Authority: Active Approval & Queue tabs maintain authoritative live DOM stats
+ * - Zero Clobbering: Background fetches NEVER overwrite active DOM data
+ * - Robust Approval Extraction: Comprehensive recognition of Approval URLs, headings, and row checkouts
  * - Complete Multi-Page Scanning: Scans ALL pages beyond the 100 limit for exact locked counts
  * - Non-Blocking Background Pagination: Zero lag on active desk work with polite throttling
  * - Continuous Background Syncing directly to Supabase PostgreSQL (even when PC is locked / Win + L)
@@ -10,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '1.1.0';
+  const VERSION = '1.1.1';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -43,26 +46,51 @@
   let isBackgroundFetching = false;
   let lastBgFetchTimestamp = { queue: 0, approval: 0 };
 
-  // Detect which queue this tab is viewing
-  function detectCurrentPage() {
-    const url = window.location.href;
-    if (url.includes('listusartworkrequests2')) return 'queue';
-    if (url.includes('listusartworkspendingapproval')) return 'approval';
+  // Checks if a row is checked out / claimed by reviewer background color
+  function isRowCheckedOut(row) {
+    if (!row) return false;
+    const bg = (row.getAttribute('bgcolor') || (row.style ? row.style.backgroundColor : '') || '').toLowerCase();
+    return !!(bg && (
+      bg.includes('fcd2') || bg.includes('fdd8') || bg.includes('f8b8') || 
+      bg.includes('ffe5') || bg.includes('252') || bg.includes('253') || 
+      bg.includes('248') || bg.includes('gold') || bg.includes('yellow')
+    ));
+  }
 
+  // Detect which queue this tab is viewing (handles URLs, pathways, headings, and page title)
+  function detectCurrentPage() {
+    const url = (window.location.href || '').toLowerCase();
+
+    // 1. Direct URL check
+    if (url.includes('listusartworkspendingapproval') || url.includes('pendingapproval') || url.includes('task=approval') || url.includes('artworkapproval')) {
+      return 'approval';
+    }
+    if (url.includes('listusartworkrequests2') || url.includes('task=listusartworkrequests2') || url.includes('designsqueue')) {
+      return 'queue';
+    }
+
+    // 2. Pathway (breadcrumbs) check
     const pathway = document.querySelector('.pathway');
     if (pathway) {
-      const pText = (pathway.innerText || '').toLowerCase();
-      if (pText.includes('listusartworkrequests2')) return 'queue';
-      if (pText.includes('listusartworkspendingapproval')) return 'approval';
+      const pText = (pathway.innerText || pathway.textContent || '').toLowerCase();
+      if (pText.includes('approval') || pText.includes('pending')) return 'approval';
+      if (pText.includes('listusartworkrequests2') || pText.includes('requests') || pText.includes('queue')) return 'queue';
     }
 
-    const heading = document.querySelector('.adminheading');
+    // 3. Admin heading / Page title check
+    const heading = document.querySelector('.adminheading, h1, h2, .pagetitle, .header');
     if (heading) {
-      const hText = (heading.innerText || '').toLowerCase();
-      if (hText.includes('designs queue')) return 'queue';
-      if (hText.includes('designs approval')) return 'approval';
+      const hText = (heading.innerText || heading.textContent || '').toLowerCase();
+      if (hText.includes('approval') || hText.includes('pending')) return 'approval';
+      if (hText.includes('designs queue') || hText.includes('requests')) return 'queue';
     }
 
+    // 4. Document title check
+    const docTitle = (document.title || '').toLowerCase();
+    if (docTitle.includes('approval') || docTitle.includes('pending')) return 'approval';
+    if (docTitle.includes('designs queue') || docTitle.includes('queue')) return 'queue';
+
+    // 5. DOM Container element check
     if (document.getElementById('unassigned-page')) return 'queue';
     return 'unknown';
   }
@@ -77,18 +105,96 @@
     if (queueType === 'queue') {
       const unassigned = rootDoc.getElementById ? rootDoc.getElementById('unassigned-page') : rootDoc.querySelector('#unassigned-page');
       scopeContainer = unassigned || rootDoc.querySelector('.tab-page') || rootDoc;
+    } else if (queueType === 'approval') {
+      scopeContainer = rootDoc.querySelector('form[name="adminForm"]') || rootDoc.querySelector('.tab-page') || rootDoc;
     }
 
-    // 1. Detect Total and Range from Pagination Footer
+    // 1. Collect all candidate order rows across all tables in scopeContainer
+    const lockedIds = new Set();
+    let fallbackLockCount = 0;
+    const candidateRows = [];
+
+    const tables = scopeContainer.querySelectorAll ? scopeContainer.querySelectorAll('table.adminlist, table') : [];
+    for (const tbl of tables) {
+      if (tbl.closest && (tbl.closest('#toolbar') || tbl.closest('.toolbar') || tbl.closest('.adminheading'))) continue;
+      if (tbl.classList && (tbl.classList.contains('toolbar') || tbl.classList.contains('adminheading'))) continue;
+
+      const rows = tbl.querySelectorAll('tbody > tr, tr');
+      for (const tr of rows) {
+        if (tr.closest && (tr.closest('thead') || tr.closest('tfoot') || tr.closest('#toolbar') || tr.closest('.toolbar'))) continue;
+        if (tr.querySelector('th')) continue;
+        if (tr.classList && (tr.classList.contains('sectiontableheader') || tr.classList.contains('title'))) continue;
+        if (tr.querySelector('.sectiontablefooter, #listfooter, .pagenav, select[name="limit"]')) continue;
+
+        const hasOrderIndicator = tr.querySelector('input[type="checkbox"], a[href], img[src*="checked_out"], img[src*="padlock"]') || isRowCheckedOut(tr);
+        if (!hasOrderIndicator) continue;
+
+        candidateRows.push(tr);
+
+        // Check if locked via image or background color
+        const isBgLocked = isRowCheckedOut(tr);
+        const lockImg = tr.querySelector('img[src*="checked_out"], img[src*="padlock"], img[alt*="Checked out" i], img[title*="Checked out" i], img[alt*="Locked" i], img[title*="Locked" i], img[alt*="Lock" i], img[title*="Lock" i]');
+        const isImgLocked = lockImg && lockImg.getAttribute('name') !== 'lockqueue' && (!lockImg.closest || !lockImg.closest('#toolbar'));
+
+        if (isImgLocked || isBgLocked) {
+          let orderId = null;
+
+          // A. Order number from link text or cell (highest fidelity)
+          const links = tr.querySelectorAll('a[href]');
+          for (const link of links) {
+            const linkText = (link.textContent || '').trim();
+            const numMatch = linkText.match(/\b([A-Z]?\d{6,8}[A-Z]?)\b/i);
+            if (numMatch) {
+              orderId = numMatch[1];
+              break;
+            }
+            const m = link.href.match(/[?&](?:order_id|order|orderno|req|reqid|order_no|cid\[\])=([a-zA-Z0-9_-]+)/i);
+            if (m && m[1] && m[1] !== '0') {
+              orderId = m[1];
+              break;
+            }
+          }
+
+          // B. Checkbox value (pure order number)
+          if (!orderId) {
+            const cb = tr.querySelector('input[type="checkbox"][name*="cid"], input[type="checkbox"][name*="id"], input[type="checkbox"][value]');
+            if (cb && cb.value && cb.value !== '0' && cb.value !== 'on') {
+              const val = cb.value.trim();
+              if (/^\d{6,8}$/.test(val) || /^[A-Z]?\d{6,8}[A-Z]?$/i.test(val)) {
+                orderId = val;
+              }
+            }
+          }
+
+          // C. Row text search for 6-8 digit order number (e.g. 3893534)
+          if (!orderId) {
+            const rowText = tr.textContent || '';
+            const match = rowText.match(/\b(3\d{6})\b/) || rowText.match(/\b(\d{7})\b/) || rowText.match(/\b([A-Z]?\d{6,8}[A-Z]?)\b/);
+            if (match) {
+              orderId = match[1];
+            }
+          }
+
+          if (orderId) {
+            lockedIds.add(orderId);
+          } else {
+            fallbackLockCount++;
+          }
+        }
+      }
+    }
+
+    // 2. Detect Total and Range from Pagination Footer
     let total = null;
     let rangeStart = 0;
     let rangeEnd = 0;
 
-    const footerEls = scopeContainer.querySelectorAll('.sectiontablefooter, #listfooter, select[name="limit"], .page-nav, .pagenav');
+    const footerEls = scopeContainer.querySelectorAll ? 
+      scopeContainer.querySelectorAll('.sectiontablefooter, #listfooter, select[name="limit"], .page-nav, .pagenav, .pagination') : [];
     for (const el of footerEls) {
-      const parentRow = el.closest('tr') || el.parentElement;
+      const parentRow = el.closest ? (el.closest('tr') || el.parentElement) : el.parentElement;
       const txt = parentRow ? parentRow.textContent : el.textContent;
-      const m = txt.match(/Results\s+(\d+)\s*-\s*(\d+)\s+of\s+([\d,]+)/i);
+      const m = (txt || '').match(/Results\s+(\d+)\s*-\s*(\d+)\s+of\s+([\d,]+)/i);
       if (m) {
         rangeStart = parseInt(m[1], 10);
         rangeEnd = parseInt(m[2], 10);
@@ -98,68 +204,22 @@
     }
 
     if (total == null) {
-      const containerTxt = scopeContainer.textContent || '';
+      const containerTxt = scopeContainer.textContent || (scopeContainer.body ? scopeContainer.body.textContent : '') || '';
       const m = containerTxt.match(/Results\s+(\d+)\s*-\s*(\d+)\s+of\s+([\d,]+)/i);
       if (m) {
         rangeStart = parseInt(m[1], 10);
         rangeEnd = parseInt(m[2], 10);
         total = parseInt(m[3].replace(/,/g, ''), 10);
-      } else if (containerTxt.includes('No records found')) {
+      } else if (containerTxt.includes('No records found') || containerTxt.includes('No matching results')) {
         total = 0;
       }
     }
 
-    // 2. Count locked orders strictly within the list table
-    const lockedIds = new Set();
-    let fallbackLockCount = 0;
-
-    const table = scopeContainer.querySelector('table.adminlist') || scopeContainer.querySelector('table');
-    const rows = table ? table.querySelectorAll('tbody > tr, tr') : [];
-
-    for (const tr of rows) {
-      if (tr.closest('thead') || tr.closest('tfoot') || tr.closest('#toolbar') || tr.closest('.toolbar')) continue;
-      if (tr.querySelector('th')) continue;
-      if (tr.classList.contains('sectiontableheader') || tr.classList.contains('title')) continue;
-      if (tr.querySelector('.sectiontablefooter, #listfooter, .pagenav, select[name="limit"]')) continue;
-
-      const lockImg = tr.querySelector('img[src*="checked_out"], img[src*="padlock"], img[alt*="Checked out" i], img[title*="Checked out" i], img[alt*="Locked" i], img[title*="Locked" i]');
-      if (lockImg) {
-        if (lockImg.getAttribute('name') === 'lockqueue' || lockImg.closest('#toolbar')) continue;
-
-        let orderId = null;
-
-        // Checkbox value
-        const cb = tr.querySelector('input[type="checkbox"][name*="cid"], input[type="checkbox"][name*="id"], input[type="checkbox"][value]');
-        if (cb && cb.value && cb.value !== '0' && cb.value !== 'on') {
-          orderId = cb.value.trim();
-        }
-
-        // Link href
-        if (!orderId) {
-          const links = tr.querySelectorAll('a[href]');
-          for (const link of links) {
-            const m = link.href.match(/[?&](?:id|order_id|order|orderno|req|reqid|cid\[\])=([a-zA-Z0-9_-]+)/i);
-            if (m) {
-              orderId = m[1];
-              break;
-            }
-          }
-        }
-
-        // Alphanumeric order number pattern
-        if (!orderId) {
-          const orderNumMatch = (tr.textContent || '').match(/\b([A-Z]\d{6,8}[A-Z]?)\b/);
-          if (orderNumMatch) {
-            orderId = orderNumMatch[1];
-          }
-        }
-
-        if (orderId) {
-          lockedIds.add(orderId);
-        } else {
-          fallbackLockCount++;
-        }
-      }
+    // Fallback: If pagination footer is absent, use candidateRows.length as true total
+    if (total == null && candidateRows.length > 0) {
+      total = candidateRows.length;
+      rangeStart = 1;
+      rangeEnd = candidateRows.length;
     }
 
     let finalLockedCount = lockedIds.size > 0 ? (lockedIds.size + fallbackLockCount) : fallbackLockCount;
@@ -176,14 +236,14 @@
     };
   }
 
-  // Retrieve cached stats from localStorage
-  function getStoredStats(key) {
+  // Retrieve cached stats from localStorage with full metadata
+  function getStoredStatsInfo(key) {
     try {
       const item = localStorage.getItem(key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.timestamp < 300000) { // 5-minute validity
-        return parsed.stats;
+        return parsed;
       }
       return null;
     } catch (e) {
@@ -191,12 +251,18 @@
     }
   }
 
-  // Save stats to localStorage
-  function setStoredStats(key, stats) {
+  function getStoredStats(key) {
+    const info = getStoredStatsInfo(key);
+    return info ? info.stats : null;
+  }
+
+  // Save stats to localStorage with source tag
+  function setStoredStats(key, stats, source = 'bg') {
     try {
       if (stats) {
         localStorage.setItem(key, JSON.stringify({
           stats: stats,
+          source: source,
           timestamp: Date.now()
         }));
       }
@@ -237,6 +303,13 @@
     const storageKey = targetQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL;
     const baselineKey = targetQueueType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
 
+    // AUTHORITY CHECK: If background scanning without initialDomStats, check if an active tab is managing this queue via live DOM
+    const existingInfo = getStoredStatsInfo(storageKey);
+    if (!initialDomStats && existingInfo && existingInfo.source === 'dom' && (now - existingInfo.timestamp < 35000)) {
+      // Live tab has authority! Never overwrite it with a background scan!
+      return existingInfo.stats;
+    }
+
     // Throttle background scans to at most once per 8 seconds unless forced with initialDomStats
     if (!initialDomStats && (now - lastBgFetchTimestamp[targetQueueType] < 8000)) {
       return getStoredStats(storageKey);
@@ -257,7 +330,9 @@
       // If we don't have DOM stats from an active tab, fetch page 1 with cache-buster
       if (!basePageStats) {
         const cb = Date.now() + Math.random();
-        const cleanUrl = `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=&_cb=${cb}`;
+        const cleanUrl = targetQueueType === 'queue'
+          ? `${baseUrl}&limit=100&limitstart=0&searchqueue=&searchrush=&searchlate=&search=&_cb=${cb}`
+          : `${baseUrl}&limit=100&limitstart=0&_cb=${cb}`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
@@ -284,7 +359,7 @@
       // If empty queue
       if (totalCount === 0) {
         const emptyStats = { total: 0, locked: 0, unlocked: 0, lockedIds: [] };
-        setStoredStats(storageKey, emptyStats);
+        setStoredStats(storageKey, emptyStats, initialDomStats ? 'dom' : 'bg');
         return emptyStats;
       }
 
@@ -301,7 +376,7 @@
           lockedIds: Array.from(allLockedIds)
         };
         if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
-        setStoredStats(storageKey, singlePageStats);
+        setStoredStats(storageKey, singlePageStats, initialDomStats ? 'dom' : 'bg');
         return singlePageStats;
       }
 
@@ -316,7 +391,9 @@
         if (isCovered) continue;
 
         const cb = Date.now() + Math.random();
-        const pageUrl = `${baseUrl}&limit=100&limitstart=${start}&searchqueue=&searchrush=&searchlate=&search=&_cb=${cb}`;
+        const pageUrl = targetQueueType === 'queue'
+          ? `${baseUrl}&limit=100&limitstart=${start}&searchqueue=&searchrush=&searchlate=&search=&_cb=${cb}`
+          : `${baseUrl}&limit=100&limitstart=${start}&_cb=${cb}`;
         remainingFetches.push(
           fetch(pageUrl, { credentials: 'include', cache: 'no-store' })
             .then(r => r.ok ? r.text() : '')
@@ -361,7 +438,7 @@
       console.log(`%c[NBERM Multi-Page Scan: ${targetQueueType.toUpperCase()} COMPLETE] Total: ${totalCount} | ALL Locked: ${finalLocked} (Unique IDs: ${allLockedIds.size}) | Open: ${multiPageStats.unlocked}`, 'color: #10b981; font-weight: bold;');
 
       if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
-      setStoredStats(storageKey, multiPageStats);
+      setStoredStats(storageKey, multiPageStats, initialDomStats ? 'dom' : 'bg');
       return multiPageStats;
     } catch (err) {
       console.warn(`[NBERM Scan Error: ${targetQueueType}]`, err);
@@ -462,10 +539,10 @@
 
           if (pageType === 'approval') {
             liveApproval = activeStats;
-            setStoredStats(STORAGE_KEY_APPROVAL, activeStats);
+            setStoredStats(STORAGE_KEY_APPROVAL, activeStats, 'dom');
           } else {
             liveQueue = activeStats;
-            setStoredStats(STORAGE_KEY_QUEUE, activeStats);
+            setStoredStats(STORAGE_KEY_QUEUE, activeStats, 'dom');
           }
 
           broadcastDualStats(liveApproval, liveQueue);
@@ -564,10 +641,14 @@
   }
   startActivePoll();
 
-  // Instant DOM Mutation Observer: Triggers within 250ms whenever orders table rows/locks change
+  // Instant DOM Mutation Observer: Triggers within 200ms whenever orders table rows/locks change
   let mutationTimeout = null;
   function setupMutationObserver() {
-    const targetNode = document.querySelector('table.adminlist') || document.querySelector('#unassigned-page') || document.body;
+    const targetNode = document.querySelector('form[name="adminForm"]') || 
+                       document.getElementById('unassigned-page') || 
+                       document.querySelector('.tab-page') || 
+                       document.querySelector('table.adminlist') || 
+                       document.body;
     if (!targetNode) return;
 
     try {
@@ -578,7 +659,7 @@
             isRelevant = true;
             break;
           }
-          if (m.type === 'attributes' && (m.attributeName === 'src' || m.attributeName === 'class' || m.attributeName === 'style')) {
+          if (m.type === 'attributes' && (m.attributeName === 'src' || m.attributeName === 'class' || m.attributeName === 'style' || m.attributeName === 'bgcolor')) {
             isRelevant = true;
             break;
           }
@@ -587,7 +668,7 @@
           if (mutationTimeout) clearTimeout(mutationTimeout);
           mutationTimeout = setTimeout(() => {
             performSync(false);
-          }, 250);
+          }, 200);
         }
       });
 
@@ -595,15 +676,15 @@
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['src', 'class', 'style', 'value', 'checked']
+        attributeFilter: ['src', 'class', 'style', 'bgcolor', 'value', 'checked']
       });
     } catch (e) {}
   }
 
-  // Instant Action Interceptor: clicks on locks, checkboxes, pagination or toolbar buttons trigger instant sync
+  // Instant Action Interceptor: clicks on locks, checkboxes, rows, pagination or toolbar buttons trigger instant sync
   document.addEventListener('click', (e) => {
     const target = e.target;
-    if (target && target.closest && target.closest('img[src*="checked_out"], img[src*="padlock"], input[type="checkbox"], a.pagenav, .page-nav a, #toolbar button, input[type="submit"]')) {
+    if (target && target.closest && target.closest('img[src*="checked_out"], img[src*="padlock"], input[type="checkbox"], a.pagenav, .page-nav a, #toolbar button, input[type="submit"], tr[bgcolor], table.adminlist tr, .adminlist tr')) {
       setTimeout(() => performSync(false), 200);
       setTimeout(() => performSync(false), 850);
     }

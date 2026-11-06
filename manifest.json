@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "3 - NBERM Phone Sync",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Live queue and locked orders sync to Supabase & phone dashboard.",
   "icons": {
     "16": "icon-16.png",
