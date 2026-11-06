@@ -1,22 +1,19 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.1.2 - Ultra-Fast Supabase Edition)
- * - Auto-Desk Live Sync: Silently fetches fresh server data without requiring manual F5 refresh!
- * - In-Place Table Updater: Updates orders table in-place when new orders arrive from colleagues
- * - Non-Disruptive: Never interrupts active typing or checked checkboxes
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.1.3 - 100% Stealth Read-Only Edition)
+ * - 100% Non-Disruptive: NEVER modifies, reloads, or replaces visible DOM elements or tables
+ * - Fully Compatible with 1-Page-Splitting: Zero interference with side-by-side order details view
+ * - Passive Event Listeners: Never captures or cancels clicks, allowing seamless order selection
+ * - In-Memory Server Poller: Checks server queue state purely in memory without touching the live page
  * - Sub-Second Synchronization: Instant DOM MutationObserver + Action Click Triggers (<200ms)
- * - High-Frequency Active Desk Heartbeat: 3.5-Second Active Queue Checks
  * - Dual-Queue Live Authority: Active Approval & Queue tabs maintain authoritative live DOM stats
- * - Zero Clobbering: Background fetches NEVER overwrite active DOM data
- * - Robust Approval Extraction: Comprehensive recognition of Approval URLs, headings, and row checkouts
  * - Complete Multi-Page Scanning: Scans ALL pages beyond the 100 limit for exact locked counts
- * - Non-Blocking Background Pagination: Zero lag on active desk work with polite throttling
  * - Continuous Background Syncing directly to Supabase PostgreSQL (even when PC is locked / Win + L)
  */
 
 (function () {
   'use strict';
 
-  const VERSION = '1.1.2';
+  const VERSION = '1.1.3';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -514,109 +511,21 @@
   let lastServerPollTimestamp = 0;
   let isPollingCurrentPage = false;
 
-  // Checks if the user is actively interacting with the desk (typing, checking boxes)
-  function isUserInteracting() {
-    const active = document.activeElement;
-    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) {
-      return true;
-    }
-    const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
-    if (checkedBoxes.length > 0) {
-      return true;
-    }
-    return false;
-  }
-
-  // Floating desk indicator showing live sync state and manual refresh action
-  function flashDeskSyncIndicator(stats, pageType) {
-    let indicator = document.getElementById('nberm-live-pill');
-    if (!indicator) {
-      indicator = document.createElement('div');
-      indicator.id = 'nberm-live-pill';
-      indicator.style.cssText = `
-        position: fixed;
-        bottom: 16px;
-        right: 16px;
-        background: #090d16;
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.4);
-        padding: 6px 14px;
-        border-radius: 9999px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-        z-index: 999999;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        user-select: none;
-        transition: all 0.3s ease;
-      `;
-      indicator.title = 'NBERM Live Sync: Auto-Updating in background. Click to force refresh.';
-      indicator.onclick = () => {
-        performSync(true);
-        pollActiveDeskFromServer(detectCurrentPage(), true);
-      };
-      document.body.appendChild(indicator);
-    }
-
-    const typeLabel = pageType === 'approval' ? 'Approval' : 'Design';
-    const totalTxt = stats ? `${stats.total} (${stats.locked} Locked)` : 'Live';
-    indicator.innerHTML = `<span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; display: inline-block;"></span> ${typeLabel}: ${totalTxt} • Auto-Sync`;
-    indicator.style.borderColor = '#10b981';
-    indicator.style.background = '#0e1726';
-    setTimeout(() => {
-      if (indicator) {
-        indicator.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-        indicator.style.background = '#090d16';
-      }
-    }, 1500);
-  }
-
-  // Seamless in-place desk table update without page reload
-  function updateDeskTableInPlace(freshDoc) {
-    if (!freshDoc || isUserInteracting()) return false;
-
-    const currentTable = document.querySelector('table.adminlist') || document.querySelector('table');
-    const newTable = freshDoc.querySelector('table.adminlist') || freshDoc.querySelector('table');
-
-    if (currentTable && newTable) {
-      const currentTbody = currentTable.querySelector('tbody') || currentTable;
-      const newTbody = newTable.querySelector('tbody') || newTable;
-
-      if (currentTbody && newTbody && currentTbody.innerHTML !== newTbody.innerHTML) {
-        const scrollY = window.scrollY;
-        currentTbody.innerHTML = newTbody.innerHTML;
-
-        const currentFooter = document.querySelector('.sectiontablefooter, #listfooter');
-        const newFooter = freshDoc.querySelector('.sectiontablefooter, #listfooter');
-        if (currentFooter && newFooter) {
-          currentFooter.innerHTML = newFooter.innerHTML;
-        }
-
-        window.scrollTo(window.scrollX, scrollY);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // Silent background fetch of current active desk page to get REAL-TIME server updates without manual F5
+  // Silent background fetch of active queue: keeps phone 100% updated in memory without touching visible DOM
   async function pollActiveDeskFromServer(pageType, force = false) {
     const now = Date.now();
-    if (isPollingCurrentPage || (!force && (now - lastServerPollTimestamp < 5000))) {
+    if (isPollingCurrentPage || (!force && (now - lastServerPollTimestamp < 6000))) {
       return null;
     }
     isPollingCurrentPage = true;
     lastServerPollTimestamp = now;
 
     try {
-      const targetUrl = window.location.href;
+      const baseUrl = pageType === 'approval' ? APPROVAL_URL : QUEUE_URL;
       const cb = now + Math.random();
-      const fetchUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_cb=${cb}`;
+      const fetchUrl = pageType === 'queue'
+        ? `${baseUrl}&limit=100&limitstart=0&searchqueue=&_cb=${cb}`
+        : `${baseUrl}&limit=100&limitstart=0&_cb=${cb}`;
 
       const res = await fetch(fetchUrl, {
         credentials: 'include',
@@ -646,10 +555,8 @@
         if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
         setStoredStats(storageKey, activeStats, 'dom');
 
-        // Seamlessly update visible desk table in-place if server orders changed!
-        updateDeskTableInPlace(doc);
-        flashDeskSyncIndicator(activeStats, pageType);
-
+        // PURE IN-MEMORY EXTRACTION ONLY:
+        // NEVER touch the active document or table - preserves 100% split-page layout and user workflow!
         return activeStats;
       }
       return null;
@@ -698,7 +605,6 @@
           }
 
           broadcastDualStats(liveApproval, liveQueue);
-          flashDeskSyncIndicator(activeStats, pageType);
 
           // Silent background server check to get fresh server data without manual F5
           pollActiveDeskFromServer(pageType).then(serverStats => {
@@ -843,14 +749,15 @@
     } catch (e) {}
   }
 
-  // Instant Action Interceptor: clicks on locks, checkboxes, rows, pagination or toolbar buttons trigger instant sync
+  // Passive lock click detector: never blocks, captures, or interrupts Page Splitter or user clicks
   document.addEventListener('click', (e) => {
-    const target = e.target;
-    if (target && target.closest && target.closest('img[src*="checked_out"], img[src*="padlock"], input[type="checkbox"], a.pagenav, .page-nav a, #toolbar button, input[type="submit"], tr[bgcolor], table.adminlist tr, .adminlist tr')) {
-      setTimeout(() => performSync(false), 200);
-      setTimeout(() => performSync(false), 850);
-    }
-  }, true);
+    try {
+      const target = e.target;
+      if (target && target.closest && target.closest('img[src*="checked_out"], img[src*="padlock"], #toolbar button')) {
+        setTimeout(() => performSync(false), 300);
+      }
+    } catch (err) {}
+  }, { passive: true });
 
   // Trigger on visibility change and load
   document.addEventListener('visibilitychange', () => {
