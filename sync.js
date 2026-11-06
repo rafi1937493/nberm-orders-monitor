@@ -1,5 +1,8 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.1.1 - Ultra-Fast Supabase Edition)
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.1.2 - Ultra-Fast Supabase Edition)
+ * - Auto-Desk Live Sync: Silently fetches fresh server data without requiring manual F5 refresh!
+ * - In-Place Table Updater: Updates orders table in-place when new orders arrive from colleagues
+ * - Non-Disruptive: Never interrupts active typing or checked checkboxes
  * - Sub-Second Synchronization: Instant DOM MutationObserver + Action Click Triggers (<200ms)
  * - High-Frequency Active Desk Heartbeat: 3.5-Second Active Queue Checks
  * - Dual-Queue Live Authority: Active Approval & Queue tabs maintain authoritative live DOM stats
@@ -13,7 +16,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '1.1.1';
+  const VERSION = '1.1.2';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -508,6 +511,155 @@
     } catch (e) {}
   }
 
+  let lastServerPollTimestamp = 0;
+  let isPollingCurrentPage = false;
+
+  // Checks if the user is actively interacting with the desk (typing, checking boxes)
+  function isUserInteracting() {
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) {
+      return true;
+    }
+    const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
+    if (checkedBoxes.length > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  // Floating desk indicator showing live sync state and manual refresh action
+  function flashDeskSyncIndicator(stats, pageType) {
+    let indicator = document.getElementById('nberm-live-pill');
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.id = 'nberm-live-pill';
+      indicator.style.cssText = `
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        background: #090d16;
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        padding: 6px 14px;
+        border-radius: 9999px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.3s ease;
+      `;
+      indicator.title = 'NBERM Live Sync: Auto-Updating in background. Click to force refresh.';
+      indicator.onclick = () => {
+        performSync(true);
+        pollActiveDeskFromServer(detectCurrentPage(), true);
+      };
+      document.body.appendChild(indicator);
+    }
+
+    const typeLabel = pageType === 'approval' ? 'Approval' : 'Design';
+    const totalTxt = stats ? `${stats.total} (${stats.locked} Locked)` : 'Live';
+    indicator.innerHTML = `<span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; display: inline-block;"></span> ${typeLabel}: ${totalTxt} • Auto-Sync`;
+    indicator.style.borderColor = '#10b981';
+    indicator.style.background = '#0e1726';
+    setTimeout(() => {
+      if (indicator) {
+        indicator.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        indicator.style.background = '#090d16';
+      }
+    }, 1500);
+  }
+
+  // Seamless in-place desk table update without page reload
+  function updateDeskTableInPlace(freshDoc) {
+    if (!freshDoc || isUserInteracting()) return false;
+
+    const currentTable = document.querySelector('table.adminlist') || document.querySelector('table');
+    const newTable = freshDoc.querySelector('table.adminlist') || freshDoc.querySelector('table');
+
+    if (currentTable && newTable) {
+      const currentTbody = currentTable.querySelector('tbody') || currentTable;
+      const newTbody = newTable.querySelector('tbody') || newTable;
+
+      if (currentTbody && newTbody && currentTbody.innerHTML !== newTbody.innerHTML) {
+        const scrollY = window.scrollY;
+        currentTbody.innerHTML = newTbody.innerHTML;
+
+        const currentFooter = document.querySelector('.sectiontablefooter, #listfooter');
+        const newFooter = freshDoc.querySelector('.sectiontablefooter, #listfooter');
+        if (currentFooter && newFooter) {
+          currentFooter.innerHTML = newFooter.innerHTML;
+        }
+
+        window.scrollTo(window.scrollX, scrollY);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Silent background fetch of current active desk page to get REAL-TIME server updates without manual F5
+  async function pollActiveDeskFromServer(pageType, force = false) {
+    const now = Date.now();
+    if (isPollingCurrentPage || (!force && (now - lastServerPollTimestamp < 5000))) {
+      return null;
+    }
+    isPollingCurrentPage = true;
+    lastServerPollTimestamp = now;
+
+    try {
+      const targetUrl = window.location.href;
+      const cb = now + Math.random();
+      const fetchUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_cb=${cb}`;
+
+      const res = await fetch(fetchUrl, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+
+      if (!res.ok) return null;
+
+      const html = await res.text();
+      const targetHtml = pageType === 'queue' ? extractRequestsSection(html) : html;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(targetHtml, 'text/html');
+
+      const serverStats = extractStatsFromDom(doc, pageType);
+      if (serverStats) {
+        const totalCount = serverStats.total != null ? serverStats.total : serverStats.lockedCount;
+        const finalLocked = Math.min(totalCount, serverStats.lockedCount);
+        const activeStats = {
+          total: totalCount,
+          locked: finalLocked,
+          unlocked: Math.max(0, totalCount - finalLocked),
+          lockedIds: Array.from(serverStats.lockedIds || [])
+        };
+
+        const storageKey = pageType === 'approval' ? STORAGE_KEY_APPROVAL : STORAGE_KEY_QUEUE;
+        const baselineKey = pageType === 'approval' ? BASELINE_KEY_APPROVAL : BASELINE_KEY_QUEUE;
+        if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
+        setStoredStats(storageKey, activeStats, 'dom');
+
+        // Seamlessly update visible desk table in-place if server orders changed!
+        updateDeskTableInPlace(doc);
+        flashDeskSyncIndicator(activeStats, pageType);
+
+        return activeStats;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    } finally {
+      isPollingCurrentPage = false;
+    }
+  }
+
   // Main sync coordinator: handles active desk mode AND locked-PC background mode
   async function performSync(forceFetch = false) {
     const pageType = detectCurrentPage();
@@ -546,6 +698,16 @@
           }
 
           broadcastDualStats(liveApproval, liveQueue);
+          flashDeskSyncIndicator(activeStats, pageType);
+
+          // Silent background server check to get fresh server data without manual F5
+          pollActiveDeskFromServer(pageType).then(serverStats => {
+            if (serverStats) {
+              if (pageType === 'approval') liveApproval = serverStats;
+              else liveQueue = serverStats;
+              broadcastDualStats(liveApproval, liveQueue);
+            }
+          });
         } else {
           // Multi-page queue (e.g. 304 orders across 4 pages):
           const cachedStats = getStoredStats(pageType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL);
