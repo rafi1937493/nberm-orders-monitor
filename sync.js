@@ -1,24 +1,27 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.1.3 - 100% Stealth Read-Only Edition)
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.1.4 - Direct Supabase & Split-Safe Edition)
  * - 100% Non-Disruptive: NEVER modifies, reloads, or replaces visible DOM elements or tables
- * - Fully Compatible with 1-Page-Splitting: Zero interference with side-by-side order details view
+ * - Fully Compatible with 1-Page-Splitting: Scopes cleanly to .nberm-orders-scroll-wrapper
+ * - Zero Conflicting Server Polls: Active tab's visible DOM is the sole authority (no unfiltered clobbering)
+ * - Direct Supabase Sync: Pushes directly from content script (<100ms), bypassing sleeping MV3 service workers
  * - Passive Event Listeners: Never captures or cancels clicks, allowing seamless order selection
- * - In-Memory Server Poller: Checks server queue state purely in memory without touching the live page
  * - Sub-Second Synchronization: Instant DOM MutationObserver + Action Click Triggers (<200ms)
- * - Dual-Queue Live Authority: Active Approval & Queue tabs maintain authoritative live DOM stats
- * - Complete Multi-Page Scanning: Scans ALL pages beyond the 100 limit for exact locked counts
+ * - Complete Multi-Page Scanning: Scans background queues beyond the 100 limit for exact locked counts
  * - Continuous Background Syncing directly to Supabase PostgreSQL (even when PC is locked / Win + L)
  */
 
 (function () {
   'use strict';
 
-  const VERSION = '1.1.3';
+  const VERSION = '1.1.4';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
   const TAB_ID = Math.random().toString(36).substring(2, 9);
   console.log(`%c[3 - NBERM Phone Sync v${VERSION} Active - Tab: ${TAB_ID}]`, 'color: #10b981; font-weight: bold;');
+
+  const SUPABASE_URL = 'https://atckbreoadvmzpllsfjl.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_UagRupbU-ur550mE1_E-aA_IG4KC1rB';
 
   const APPROVAL_URL = 'https://nberm.com/administrator/index2.php?option=com_mps&task=listusartworkspendingapproval';
   const QUEUE_URL = 'https://nberm.com/administrator/index2.php?option=com_mps&task=listusartworkrequests2';
@@ -49,12 +52,28 @@
   // Checks if a row is checked out / claimed by reviewer background color
   function isRowCheckedOut(row) {
     if (!row) return false;
-    const bg = (row.getAttribute('bgcolor') || (row.style ? row.style.backgroundColor : '') || '').toLowerCase();
-    return !!(bg && (
-      bg.includes('fcd2') || bg.includes('fdd8') || bg.includes('f8b8') || 
-      bg.includes('ffe5') || bg.includes('252') || bg.includes('253') || 
-      bg.includes('248') || bg.includes('gold') || bg.includes('yellow')
-    ));
+    const rowBg = (row.getAttribute('bgcolor') || (row.style ? row.style.backgroundColor : '') || '').toLowerCase();
+    if (rowBg && (
+      rowBg.includes('fcd2') || rowBg.includes('fdd8') || rowBg.includes('f8b8') || 
+      rowBg.includes('ffe5') || rowBg.includes('252') || rowBg.includes('253') || 
+      rowBg.includes('248') || rowBg.includes('gold') || rowBg.includes('yellow') ||
+      rowBg.includes('rgb(25') || rowBg.includes('orange')
+    )) {
+      return true;
+    }
+    const firstCell = row.querySelector ? row.querySelector('td') : null;
+    if (firstCell) {
+      const cellBg = (firstCell.getAttribute('bgcolor') || (firstCell.style ? firstCell.style.backgroundColor : '') || '').toLowerCase();
+      if (cellBg && (
+        cellBg.includes('fcd2') || cellBg.includes('fdd8') || cellBg.includes('f8b8') || 
+        cellBg.includes('ffe5') || cellBg.includes('252') || cellBg.includes('253') || 
+        cellBg.includes('248') || cellBg.includes('gold') || cellBg.includes('yellow') ||
+        cellBg.includes('rgb(25') || cellBg.includes('orange')
+      )) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // Detect which queue this tab is viewing (handles URLs, pathways, headings, and page title)
@@ -104,9 +123,11 @@
     let scopeContainer = rootDoc;
     if (queueType === 'queue') {
       const unassigned = rootDoc.getElementById ? rootDoc.getElementById('unassigned-page') : rootDoc.querySelector('#unassigned-page');
-      scopeContainer = unassigned || rootDoc.querySelector('.tab-page') || rootDoc;
+      scopeContainer = unassigned || (rootDoc.querySelector ? rootDoc.querySelector('.tab-page') : null) || rootDoc;
     } else if (queueType === 'approval') {
-      scopeContainer = rootDoc.querySelector('form[name="adminForm"]') || rootDoc.querySelector('.tab-page') || rootDoc;
+      // Prioritize Page Splitter's scrollable left orders wrapper
+      const scrollWrapper = rootDoc.querySelector ? rootDoc.querySelector('.nberm-orders-scroll-wrapper') : null;
+      scopeContainer = scrollWrapper || (rootDoc.querySelector ? rootDoc.querySelector('form[name="adminForm"]') : null) || (rootDoc.querySelector ? rootDoc.querySelector('.tab-page') : null) || rootDoc;
     }
 
     // 1. Collect all candidate order rows across all tables in scopeContainer
@@ -116,14 +137,38 @@
 
     const tables = scopeContainer.querySelectorAll ? scopeContainer.querySelectorAll('table.adminlist, table') : [];
     for (const tbl of tables) {
-      if (tbl.closest && (tbl.closest('#toolbar') || tbl.closest('.toolbar') || tbl.closest('.adminheading'))) continue;
-      if (tbl.classList && (tbl.classList.contains('toolbar') || tbl.classList.contains('adminheading'))) continue;
+      if (tbl.closest && (
+        tbl.closest('#toolbar') || 
+        tbl.closest('.toolbar') || 
+        tbl.closest('.adminheading') ||
+        tbl.closest('.nberm-stealth-details') ||
+        tbl.closest('#order-details') ||
+        tbl.closest('.order-details') ||
+        tbl.closest('.nberm-top-still-container') ||
+        tbl.closest('.nberm-bottom-still-container')
+      )) continue;
+      if (tbl.classList && (
+        tbl.classList.contains('toolbar') || 
+        tbl.classList.contains('adminheading') ||
+        tbl.classList.contains('nberm-top-still-container') ||
+        tbl.classList.contains('nberm-bottom-still-container')
+      )) continue;
+
+      // Skip Order Details tables (e.g. table with Description, Item #, Attachments)
+      const headerText = (tbl.querySelector('thead, tr:first-child')?.textContent || '').toLowerCase();
+      if (headerText.includes('order items') || headerText.includes('attachments & comments') || headerText.includes('description - w')) {
+        continue;
+      }
 
       const rows = tbl.querySelectorAll('tbody > tr, tr');
       for (const tr of rows) {
         if (tr.closest && (tr.closest('thead') || tr.closest('tfoot') || tr.closest('#toolbar') || tr.closest('.toolbar'))) continue;
         if (tr.querySelector('th')) continue;
-        if (tr.classList && (tr.classList.contains('sectiontableheader') || tr.classList.contains('title'))) continue;
+        if (tr.classList && (
+          tr.classList.contains('sectiontableheader') || 
+          tr.classList.contains('title') ||
+          tr.classList.contains('nberm-header-row')
+        )) continue;
         if (tr.querySelector('.sectiontablefooter, #listfooter, .pagenav, select[name="limit"]')) continue;
 
         const hasOrderIndicator = tr.querySelector('input[type="checkbox"], a[href], img[src*="checked_out"], img[src*="padlock"]') || isRowCheckedOut(tr);
@@ -166,10 +211,10 @@
             }
           }
 
-          // C. Row text search for 6-8 digit order number (e.g. 3893534)
+          // C. Row text search for 6-8 digit order number (e.g. 3893534, W3894456)
           if (!orderId) {
             const rowText = tr.textContent || '';
-            const match = rowText.match(/\b(3\d{6})\b/) || rowText.match(/\b(\d{7})\b/) || rowText.match(/\b([A-Z]?\d{6,8}[A-Z]?)\b/);
+            const match = rowText.match(/\b([A-Z]\d{6,8}[A-Z]?)\b/i) || rowText.match(/\b(3\d{6})\b/) || rowText.match(/\b(\d{7})\b/) || rowText.match(/\b([A-Z]?\d{6,8}[A-Z]?)\b/);
             if (match) {
               orderId = match[1];
             }
@@ -448,7 +493,38 @@
     }
   }
 
-  // Push unified stats to Vercel via background service worker
+  // Direct Supabase REST Push (Content script has host_permissions, zero dependency on MV3 service worker)
+  async function pushToSupabaseDirect(payload) {
+    try {
+      const supabasePayload = {
+        id: 'current',
+        total: Number(payload.total || 0),
+        count: Number(payload.count || payload.total || 0),
+        locked: Number(payload.locked || 0),
+        unlocked: Number(payload.unlocked || 0),
+        approval: payload.approval || {},
+        queue: payload.queue || {},
+        updated_at: new Date(payload.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: payload.timestamp
+      };
+
+      await fetch(`${SUPABASE_URL}/rest/v1/orders_status?on_conflict=id`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(supabasePayload),
+        keepalive: true
+      });
+    } catch (e) {
+      console.warn('[NBERM Direct Supabase Push Notice]', e);
+    }
+  }
+
+  // Push unified stats to Supabase and Vercel
   function broadcastDualStats(approval, queue, force = false) {
     if (!approval && !queue) return;
 
@@ -468,8 +544,8 @@
     const stateKey = `${appTotal}-${appLocked}-${appOpen}|${qTotal}-${qLocked}-${qOpen}|${appLockedSig}|${qLockedSig}`;
     const now = Date.now();
 
-    // Skip duplicate broadcasts within 3.5 seconds unless forced or state changed
-    if (!force && stateKey === lastBroadcastStateKey && (now - lastBroadcastTime < 3500)) {
+    // Skip duplicate broadcasts within 2.0 seconds unless forced or state changed
+    if (!force && stateKey === lastBroadcastStateKey && (now - lastBroadcastTime < 2000)) {
       return;
     }
 
@@ -498,7 +574,10 @@
 
     console.log(`%c[NBERM Live Sync] Pushed: Approval (${appTotal}/${appLocked}) | Design (${qTotal}/${qLocked})`, 'color: #10b981; font-weight: bold;');
 
-    // Push via Background Service Worker with error suppression
+    // 1. Instant direct push to Supabase REST API (bypasses sleeping MV3 background worker)
+    pushToSupabaseDirect(payload);
+
+    // 2. Also forward to background service worker (if active)
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
         chrome.runtime.sendMessage({ type: 'SYNC_STATS', payload: payload }, () => {
@@ -506,65 +585,6 @@
         });
       }
     } catch (e) {}
-  }
-
-  let lastServerPollTimestamp = 0;
-  let isPollingCurrentPage = false;
-
-  // Silent background fetch of active queue: keeps phone 100% updated in memory without touching visible DOM
-  async function pollActiveDeskFromServer(pageType, force = false) {
-    const now = Date.now();
-    if (isPollingCurrentPage || (!force && (now - lastServerPollTimestamp < 6000))) {
-      return null;
-    }
-    isPollingCurrentPage = true;
-    lastServerPollTimestamp = now;
-
-    try {
-      const baseUrl = pageType === 'approval' ? APPROVAL_URL : QUEUE_URL;
-      const cb = now + Math.random();
-      const fetchUrl = pageType === 'queue'
-        ? `${baseUrl}&limit=100&limitstart=0&searchqueue=&_cb=${cb}`
-        : `${baseUrl}&limit=100&limitstart=0&_cb=${cb}`;
-
-      const res = await fetch(fetchUrl, {
-        credentials: 'include',
-        cache: 'no-store'
-      });
-
-      if (!res.ok) return null;
-
-      const html = await res.text();
-      const targetHtml = pageType === 'queue' ? extractRequestsSection(html) : html;
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(targetHtml, 'text/html');
-
-      const serverStats = extractStatsFromDom(doc, pageType);
-      if (serverStats) {
-        const totalCount = serverStats.total != null ? serverStats.total : serverStats.lockedCount;
-        const finalLocked = Math.min(totalCount, serverStats.lockedCount);
-        const activeStats = {
-          total: totalCount,
-          locked: finalLocked,
-          unlocked: Math.max(0, totalCount - finalLocked),
-          lockedIds: Array.from(serverStats.lockedIds || [])
-        };
-
-        const storageKey = pageType === 'approval' ? STORAGE_KEY_APPROVAL : STORAGE_KEY_QUEUE;
-        const baselineKey = pageType === 'approval' ? BASELINE_KEY_APPROVAL : BASELINE_KEY_QUEUE;
-        if (totalCount > 0) localStorage.setItem(baselineKey, String(totalCount));
-        setStoredStats(storageKey, activeStats, 'dom');
-
-        // PURE IN-MEMORY EXTRACTION ONLY:
-        // NEVER touch the active document or table - preserves 100% split-page layout and user workflow!
-        return activeStats;
-      }
-      return null;
-    } catch (e) {
-      return null;
-    } finally {
-      isPollingCurrentPage = false;
-    }
   }
 
   // Main sync coordinator: handles active desk mode AND locked-PC background mode
@@ -575,9 +595,11 @@
     let liveApproval = getStoredStats(STORAGE_KEY_APPROVAL);
     let liveQueue = getStoredStats(STORAGE_KEY_QUEUE);
 
-    const isHidden = document.hidden || forceFetch;
+    const isHidden = document.hidden;
 
     // 1. FAST DESK MODE (User is looking at the tab)
+    // The active tab's visible DOM is the absolute, single source of truth.
+    // Zero background server fetches are run for the active desk — prevents unfiltered server lists from clobbering the user's active view.
     if (!isHidden) {
       const domStats = extractStatsFromDom(document, pageType);
       if (domStats) {
@@ -605,15 +627,6 @@
           }
 
           broadcastDualStats(liveApproval, liveQueue);
-
-          // Silent background server check to get fresh server data without manual F5
-          pollActiveDeskFromServer(pageType).then(serverStats => {
-            if (serverStats) {
-              if (pageType === 'approval') liveApproval = serverStats;
-              else liveQueue = serverStats;
-              broadcastDualStats(liveApproval, liveQueue);
-            }
-          });
         } else {
           // Multi-page queue (e.g. 304 orders across 4 pages):
           const cachedStats = getStoredStats(pageType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL);
@@ -644,7 +657,7 @@
       }
     }
 
-    // 2. BACKGROUND / LOCKED PC MODE: Only leader tab fetches fresh server HTML across all pages
+    // 2. OTHER QUEUE & BACKGROUND MODE: Leader tab keeps the other queue fresh
     if (isTabLeader()) {
       const otherQueue = pageType === 'queue' ? 'approval' : 'queue';
       const otherStats = await scanQueueMultiPage(otherQueue, null);
@@ -654,7 +667,7 @@
         broadcastDualStats(liveApproval, liveQueue);
       }
 
-      // If screen is locked, also scan current queue remotely across all pages
+      // If screen is hidden / PC locked, also scan the active queue remotely across all pages
       if (isHidden) {
         const currentStats = await scanQueueMultiPage(pageType, null);
         if (currentStats) {
@@ -670,7 +683,7 @@
   try {
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg && msg.type === 'TRIGGER_BACKGROUND_SYNC') {
-        performSync(true);
+        performSync(document.hidden);
       }
     });
   } catch (e) {}
@@ -697,7 +710,7 @@
     setInterval(() => performSync(document.hidden ? true : false), 10000);
   }
 
-  // Fast Active Desk Heartbeat: polls every 3.5 seconds when tab is actively focused
+  // Fast Active Desk Heartbeat: polls every 2.0 seconds when tab is actively focused
   let activePollTimer = null;
   function startActivePoll() {
     if (activePollTimer) clearInterval(activePollTimer);
@@ -705,7 +718,7 @@
       if (!document.hidden) {
         performSync(false);
       }
-    }, 3500);
+    }, 2000);
   }
   startActivePoll();
 
@@ -736,7 +749,7 @@
           if (mutationTimeout) clearTimeout(mutationTimeout);
           mutationTimeout = setTimeout(() => {
             performSync(false);
-          }, 200);
+          }, 150);
         }
       });
 
@@ -753,8 +766,9 @@
   document.addEventListener('click', (e) => {
     try {
       const target = e.target;
-      if (target && target.closest && target.closest('img[src*="checked_out"], img[src*="padlock"], #toolbar button')) {
-        setTimeout(() => performSync(false), 300);
+      if (target && target.closest && target.closest('tr, a, img, input, button, select')) {
+        setTimeout(() => performSync(false), 200);
+        setTimeout(() => performSync(false), 600);
       }
     } catch (err) {}
   }, { passive: true });

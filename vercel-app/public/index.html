@@ -2313,15 +2313,16 @@
     async function loadStatus(isManual = false) {
       // 1. Direct fetch from Supabase REST API (Instant, live, zero serverless limits)
       try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders_status?id=eq.current&select=*&apikey=${SUPABASE_KEY}`, {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders_status?id=eq.current&select=*`, {
           headers: {
             'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache'
+            'Authorization': `Bearer ${SUPABASE_KEY}`
           },
-          cache: 'no-store'
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         if (res.ok) {
           const rows = await res.json();
           if (Array.isArray(rows) && rows.length > 0 && rows[0]) {
