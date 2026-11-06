@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nberm-orders-v4';
+const CACHE_NAME = 'nberm-orders-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',

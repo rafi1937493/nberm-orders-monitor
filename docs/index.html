@@ -13,6 +13,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=3">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3">
   <link rel="manifest" href="./manifest.webmanifest?v=3">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <title>NBERM Dashboard &bull; Live Orders Monitor</title>
 
@@ -2385,13 +2386,56 @@
       });
     }
 
+    // --- HIGH-SPEED ADAPTIVE SYNC & REALTIME WEBSOCKETS ---
+    let pollInterval = null;
+    function startHighSpeedSync() {
+      if (pollInterval) clearInterval(pollInterval);
+      // High-frequency 1.2-second polling when user is viewing the phone
+      const delay = document.hidden ? 4000 : 1200;
+      pollInterval = setInterval(() => {
+        loadStatus(false);
+      }, delay);
+    }
+
+    // Instant sync triggers on screen unlock, app switch, or tab return
+    document.addEventListener('visibilitychange', () => {
+      startHighSpeedSync();
+      if (!document.hidden) {
+        loadStatus(false);
+      }
+    });
+    window.addEventListener('focus', () => loadStatus(false));
+    window.addEventListener('pageshow', () => loadStatus(false));
+
+    // Supabase Realtime WebSocket Push (<80ms delivery)
+    function initSupabaseRealtime() {
+      try {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+          const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          client
+            .channel('orders_status_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders_status' }, (payload) => {
+              if (payload && payload.new) {
+                renderStats(payload.new);
+                flashSyncFeedback();
+              }
+            })
+            .subscribe();
+        }
+      } catch (e) {}
+    }
+
     loadStatus();
-    setInterval(loadStatus, 2500);
+    startHighSpeedSync();
+
+    window.addEventListener('load', () => {
+      setTimeout(initSupabaseRealtime, 600);
+    });
 
     // --- SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=4').then((reg) => {
+        navigator.serviceWorker.register('./sw.js?v=5').then((reg) => {
           reg.update();
         }).catch(() => {});
       });

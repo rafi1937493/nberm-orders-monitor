@@ -1,5 +1,5 @@
 /**
- * Background Service Worker for NBERM Phone Sync (v1.0.9 - Supabase Edition)
+ * Background Service Worker for NBERM Phone Sync (v1.1.0 - Ultra-Fast Supabase Edition)
  * - Direct real-time sync to Supabase PostgreSQL (zero quota restrictions).
  * - Runs with full extension privileges, bypassing page CSP restrictions.
  * - Chrome Alarms keep this worker alive even when PC is locked (Win + L).
@@ -10,9 +10,9 @@ const SUPABASE_URL = 'https://atckbreoadvmzpllsfjl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_UagRupbU-ur550mE1_E-aA_IG4KC1rB';
 const VERCEL_URL = 'https://nberm-orders-monitor.vercel.app';
 
-// Create persistent periodic heartbeat alarm (every 0.5 minutes = 30 seconds)
+// Create persistent periodic heartbeat alarm (every 15 seconds)
 try {
-  chrome.alarms.create('nberm_lock_sync_timer', { periodInMinutes: 0.5 });
+  chrome.alarms.create('nberm_lock_sync_timer', { periodInMinutes: 0.25 });
 } catch (e) {}
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -61,7 +61,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates'
       },
-      body: JSON.stringify(supabasePayload)
+      body: JSON.stringify(supabasePayload),
+      keepalive: true
     })
       .then(res => {
         try { sendResponse({ success: true, status: res.status }); } catch (e) {}

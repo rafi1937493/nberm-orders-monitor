@@ -1,15 +1,16 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.0.9 - Supabase Edition)
- * - Complete Multi-Page Scanning: Scans ALL pages beyond the 100 limit (304+ items) for exact locked counts
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.1.0 - Ultra-Fast Supabase Edition)
+ * - Sub-Second Synchronization: Instant DOM MutationObserver + Action Click Triggers (<250ms)
+ * - High-Frequency Active Desk Heartbeat: 3-Second Active Queue Checks
+ * - Complete Multi-Page Scanning: Scans ALL pages beyond the 100 limit for exact locked counts
  * - Non-Blocking Background Pagination: Zero lag on active desk work with polite throttling
  * - Continuous Background Syncing directly to Supabase PostgreSQL (even when PC is locked / Win + L)
- * - Zero False Data: Always tracks live real-time queue states
  */
 
 (function () {
   'use strict';
 
-  const VERSION = '1.0.9';
+  const VERSION = '1.1.0';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -236,8 +237,8 @@
     const storageKey = targetQueueType === 'queue' ? STORAGE_KEY_QUEUE : STORAGE_KEY_APPROVAL;
     const baselineKey = targetQueueType === 'queue' ? BASELINE_KEY_QUEUE : BASELINE_KEY_APPROVAL;
 
-    // Throttle background scans to at most once per 20 seconds unless forced with initialDomStats
-    if (!initialDomStats && (now - lastBgFetchTimestamp[targetQueueType] < 20000)) {
+    // Throttle background scans to at most once per 8 seconds unless forced with initialDomStats
+    if (!initialDomStats && (now - lastBgFetchTimestamp[targetQueueType] < 8000)) {
       return getStoredStats(storageKey);
     }
 
@@ -385,11 +386,13 @@
     const qLocked = Math.min(qTotal, Math.max(0, queue ? queue.locked : 0));
     const qOpen = Math.max(0, qTotal - qLocked);
 
-    const stateKey = `${appTotal}-${appLocked}-${appOpen}|${qTotal}-${qLocked}-${qOpen}`;
+    const appLockedSig = (approval?.lockedIds || []).slice().sort().join(',');
+    const qLockedSig = (queue?.lockedIds || []).slice().sort().join(',');
+    const stateKey = `${appTotal}-${appLocked}-${appOpen}|${qTotal}-${qLocked}-${qOpen}|${appLockedSig}|${qLockedSig}`;
     const now = Date.now();
 
-    // Skip duplicate broadcasts within 15 seconds unless forced
-    if (!force && stateKey === lastBroadcastStateKey && (now - lastBroadcastTime < 15000)) {
+    // Skip duplicate broadcasts within 3.5 seconds unless forced or state changed
+    if (!force && stateKey === lastBroadcastStateKey && (now - lastBroadcastTime < 3500)) {
       return;
     }
 
@@ -539,15 +542,72 @@
   // Dedicated Web Worker Timer: NEVER throttled by Chrome when tab is in background or PC is locked
   try {
     const workerBlob = new Blob([
-      `setInterval(function() { postMessage('tick'); }, 25000);`
+      `setInterval(function() { postMessage('tick'); }, 10000);`
     ], { type: 'application/javascript' });
     const bgTimerWorker = new Worker(URL.createObjectURL(workerBlob));
     bgTimerWorker.onmessage = function() {
       performSync(document.hidden ? true : false);
     };
   } catch (e) {
-    setInterval(() => performSync(document.hidden ? true : false), 25000);
+    setInterval(() => performSync(document.hidden ? true : false), 10000);
   }
+
+  // Fast Active Desk Heartbeat: polls every 3.5 seconds when tab is actively focused
+  let activePollTimer = null;
+  function startActivePoll() {
+    if (activePollTimer) clearInterval(activePollTimer);
+    activePollTimer = setInterval(() => {
+      if (!document.hidden) {
+        performSync(false);
+      }
+    }, 3500);
+  }
+  startActivePoll();
+
+  // Instant DOM Mutation Observer: Triggers within 250ms whenever orders table rows/locks change
+  let mutationTimeout = null;
+  function setupMutationObserver() {
+    const targetNode = document.querySelector('table.adminlist') || document.querySelector('#unassigned-page') || document.body;
+    if (!targetNode) return;
+
+    try {
+      const observer = new MutationObserver((mutations) => {
+        let isRelevant = false;
+        for (const m of mutations) {
+          if (m.type === 'childList' && (m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
+            isRelevant = true;
+            break;
+          }
+          if (m.type === 'attributes' && (m.attributeName === 'src' || m.attributeName === 'class' || m.attributeName === 'style')) {
+            isRelevant = true;
+            break;
+          }
+        }
+        if (isRelevant) {
+          if (mutationTimeout) clearTimeout(mutationTimeout);
+          mutationTimeout = setTimeout(() => {
+            performSync(false);
+          }, 250);
+        }
+      });
+
+      observer.observe(targetNode, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src', 'class', 'style', 'value', 'checked']
+      });
+    } catch (e) {}
+  }
+
+  // Instant Action Interceptor: clicks on locks, checkboxes, pagination or toolbar buttons trigger instant sync
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (target && target.closest && target.closest('img[src*="checked_out"], img[src*="padlock"], input[type="checkbox"], a.pagenav, .page-nav a, #toolbar button, input[type="submit"]')) {
+      setTimeout(() => performSync(false), 200);
+      setTimeout(() => performSync(false), 850);
+    }
+  }, true);
 
   // Trigger on visibility change and load
   document.addEventListener('visibilitychange', () => {
@@ -556,8 +616,12 @@
   window.addEventListener('focus', () => performSync(false));
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => performSync(false));
+    document.addEventListener('DOMContentLoaded', () => {
+      setupMutationObserver();
+      performSync(false);
+    });
   } else {
+    setupMutationObserver();
     performSync(false);
   }
 })();
