@@ -163,6 +163,10 @@
       background: linear-gradient(135deg, #f59e0b, #d97706);
       box-shadow: 0 2px 12px rgba(245, 158, 11, 0.45);
     }
+    .nav-pill[data-tab="estimated-time"].active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 2px 12px rgba(16, 185, 129, 0.45);
+    }
 
     /* Right Action Bar */
     .nav-actions {
@@ -394,6 +398,178 @@
       padding: 4px 10px;
       border-radius: 8px;
       border: 1px solid var(--border-subtle);
+    }
+
+    /* ETA Top Nav Pill */
+    .nav-pill-eta {
+      background: rgba(56, 189, 248, 0.12) !important;
+      border: 1px solid rgba(56, 189, 248, 0.3) !important;
+      color: #38bdf8 !important;
+      cursor: pointer !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+      letter-spacing: 0.2px;
+    }
+    .nav-pill-eta:hover {
+      background: rgba(56, 189, 248, 0.22) !important;
+      border-color: rgba(56, 189, 248, 0.5) !important;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
+    }
+    .nav-pill-eta svg {
+      color: #38bdf8;
+    }
+
+    /* ETA Subheader Badge */
+    .eta-header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #38bdf8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .eta-header-badge:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    /* COMPLETION FORECAST SECTION & DETAILED CARD */
+    .forecast-section {
+      width: 100%;
+    }
+    .forecast-card {
+      background: radial-gradient(circle at 12% 20%, rgba(14, 165, 233, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.24);
+      border-radius: 22px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 24px rgba(56, 189, 248, 0.08);
+      transition: all 0.3s ease;
+    }
+    .forecast-card.highlight-focus {
+      border-color: #38bdf8 !important;
+      animation: forecastPulseHighlight 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+    }
+    @keyframes forecastPulseHighlight {
+      0% {
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.25), 0 10px 30px rgba(0, 0, 0, 0.4);
+      }
+      100% {
+        box-shadow: 0 0 38px rgba(56, 189, 248, 0.65), 0 14px 40px rgba(0, 0, 0, 0.5);
+      }
+    }
+    .forecast-tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: 9999px;
+      padding: 3px 10px;
+    }
+    .live-speed-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      font-weight: 600;
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .forecast-content-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .forecast-hero-box {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .forecast-hero-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #10b981);
+    }
+    .forecast-hero-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .forecast-hero-time {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.05;
+      color: #ffffff;
+      background: linear-gradient(135deg, #ffffff 40%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .forecast-hero-countdown {
+      font-size: 13px;
+      font-weight: 600;
+      color: #34d399;
+    }
+    .forecast-submetrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .forecast-subtile {
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .forecast-subtile-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .forecast-subtile-value {
+      font-size: 17px;
+      font-weight: 700;
+      color: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .forecast-subtile-sub {
+      font-size: 10px;
+      color: #64748b;
     }
 
     /* Left Card: Order By Store Layout */
@@ -1161,17 +1337,44 @@
         padding: 10px 14px !important;
       }
 
+      .forecast-card {
+        padding: 16px !important;
+        border-radius: 18px !important;
+      }
+      .forecast-content-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .forecast-hero-box {
+        padding: 16px !important;
+      }
+      .forecast-hero-time {
+        font-size: 32px !important;
+      }
+      .forecast-submetrics-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
+      .forecast-subtile {
+        padding: 10px 12px !important;
+      }
+      .forecast-subtile-value {
+        font-size: 15px !important;
+      }
+
       /* Phone / PWA Dedicated Tabbed Views (Zero Long Scroll) */
       body[data-mobile-tab="dashboard"] .queues-row {
         display: none !important;
       }
       body[data-mobile-tab="dashboard"] .kpi-grid,
-      body[data-mobile-tab="dashboard"] .middle-grid {
+      body[data-mobile-tab="dashboard"] .middle-grid,
+      body[data-mobile-tab="dashboard"] .forecast-section {
         display: grid !important;
       }
 
       body[data-mobile-tab="design"] .kpi-grid,
       body[data-mobile-tab="design"] .middle-grid,
+      body[data-mobile-tab="design"] .forecast-section,
       body[data-mobile-tab="design"] #approval-card {
         display: none !important;
       }
@@ -1184,6 +1387,7 @@
 
       body[data-mobile-tab="approval"] .kpi-grid,
       body[data-mobile-tab="approval"] .middle-grid,
+      body[data-mobile-tab="approval"] .forecast-section,
       body[data-mobile-tab="approval"] #design-card {
         display: none !important;
       }
@@ -1236,6 +1440,13 @@
           </svg>
           Approval
         </a>
+        <a class="nav-pill" href="#estimated-time" data-tab="estimated-time" onclick="selectNavTab('estimated-time', event)" id="nav-pill-eta">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="nav-pill-eta-label">Estimated Time</span>
+        </a>
       </nav>
 
       <!-- Right Action Controls -->
@@ -1271,7 +1482,14 @@
       <div class="subheader-left">
         <h1 class="page-title">Dashboard</h1>
       </div>
-      <div class="subheader-right">
+      <div class="subheader-right" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+        <span class="eta-header-badge" id="subheader-eta-badge" onclick="scrollToElement('forecast-section')" title="Tap to view Detailed Completion Forecast">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="subheader-eta-text">Finish: ~--:--</span>
+        </span>
         <span class="sync-badge" id="sync-time-badge">Syncing with Chrome extension...</span>
       </div>
     </div>
@@ -1494,6 +1712,63 @@
       </div>
     </section>
 
+    <!-- REAL-TIME COMPLETION FORECAST CARD -->
+    <section class="forecast-section" id="forecast-section">
+      <div class="analytics-card forecast-card" id="forecast-card">
+        <div class="card-headline-row">
+          <div class="forecast-headline-left">
+            <div class="forecast-tag-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>COMPLETION FORECAST</span>
+            </div>
+            <h2 class="card-headline" style="margin-top: 6px;">Estimated Finish Time</h2>
+          </div>
+          <div class="forecast-headline-right">
+            <span class="live-speed-badge" id="forecast-live-speed-badge">
+              <span class="live-dot" style="background: #38bdf8; width: 6px; height: 6px;"></span>
+              <span id="forecast-speed-rate">Speed: Calculating...</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="forecast-content-grid">
+          <!-- Big Hero Finish Time Display -->
+          <div class="forecast-hero-box">
+            <div class="forecast-hero-label">Projected Clearance</div>
+            <div class="forecast-hero-time" id="forecast-hero-time">--:--</div>
+            <div class="forecast-hero-countdown" id="forecast-hero-countdown">Analyzing live pace...</div>
+          </div>
+
+          <!-- Secondary Metric Breakdown Grid -->
+          <div class="forecast-submetrics-grid">
+            <div class="forecast-subtile">
+              <span class="forecast-subtile-label">Live Clearance Pace</span>
+              <span class="forecast-subtile-value" id="forecast-pace-val">-- orders / hr</span>
+              <span class="forecast-subtile-sub" id="forecast-pace-sub">Based on live completions</span>
+            </div>
+            <div class="forecast-subtile">
+              <span class="forecast-subtile-label">Avg Pace Per Order</span>
+              <span class="forecast-subtile-value" id="forecast-avg-time-val">-- min / order</span>
+              <span class="forecast-subtile-sub">Effective clearance rate</span>
+            </div>
+            <div class="forecast-subtile">
+              <span class="forecast-subtile-label">Approval Queue ETA</span>
+              <span class="forecast-subtile-value" style="color: #38bdf8;" id="forecast-app-eta-val">-- min</span>
+              <span class="forecast-subtile-sub" id="forecast-app-count-sub">-- open orders</span>
+            </div>
+            <div class="forecast-subtile">
+              <span class="forecast-subtile-label">Design Queue ETA</span>
+              <span class="forecast-subtile-value" style="color: #fbbf24;" id="forecast-design-eta-val">-- min</span>
+              <span class="forecast-subtile-sub" id="forecast-design-count-sub">-- open orders</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 5. DETAILED QUEUE CARDS (APPROVAL & DESIGN) -->
     <section class="queues-row">
       <!-- Card 1: Approval Queue -->
@@ -1629,6 +1904,13 @@
       </svg>
       <span>Approval</span>
     </button>
+    <button class="float-nav-item" data-tab="estimated-time" onclick="selectNavTab('estimated-time', event)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <span>Estimated</span>
+    </button>
     <button class="float-nav-item" data-tab="refresh" onclick="triggerManualRefresh()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" id="mobile-refresh-svg">
         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
@@ -1720,11 +2002,13 @@
       const activePills = document.querySelectorAll(`[data-tab="${tabName}"]`);
       activePills.forEach(p => p.classList.add('active'));
 
-      // 2. Remove focus highlights from both cards before applying target
+      // 2. Remove focus highlights from cards before applying target
       const appCard = document.getElementById('approval-card');
       const desCard = document.getElementById('design-card');
+      const forecastCard = document.getElementById('forecast-card');
       if (appCard) appCard.classList.remove('highlight-focus');
       if (desCard) desCard.classList.remove('highlight-focus');
+      if (forecastCard) forecastCard.classList.remove('highlight-focus');
 
       const isMobile = window.innerWidth <= 768;
 
@@ -1734,34 +2018,48 @@
         if (tabName === 'dashboard') titleEl.textContent = 'Dashboard';
         else if (tabName === 'design') titleEl.textContent = 'Design Queue';
         else if (tabName === 'approval') titleEl.textContent = 'Approval Queue';
+        else if (tabName === 'estimated-time') titleEl.textContent = 'Estimated Completion Time';
       } else if (titleEl) {
         titleEl.textContent = 'Dashboard';
       }
 
       // 4. Handle navigation & dedicated view switching
       if (isMobile) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
         if (tabName === 'design' && desCard) {
+          desCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
           void desCard.offsetWidth; // Force CSS reflow to re-trigger pulse/blink keyframes
           desCard.classList.add('highlight-focus');
         } else if (tabName === 'approval' && appCard) {
-          void appCard.offsetWidth; // Force CSS reflow to re-trigger pulse/blink keyframes
+          appCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          void appCard.offsetWidth;
           appCard.classList.add('highlight-focus');
+        } else if (tabName === 'estimated-time' && forecastCard) {
+          forecastCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          void forecastCard.offsetWidth;
+          forecastCard.classList.add('highlight-focus');
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
         if (tabName === 'dashboard') {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (tabName === 'design') {
           if (desCard) {
-            void desCard.offsetWidth; // Force reflow so keyframe blink starts on the same spot immediately
+            void desCard.offsetWidth;
             desCard.classList.add('highlight-focus');
             desCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         } else if (tabName === 'approval') {
           if (appCard) {
-            void appCard.offsetWidth; // Force reflow so keyframe blink starts on the same spot immediately
+            void appCard.offsetWidth;
             appCard.classList.add('highlight-focus');
             appCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else if (tabName === 'estimated-time') {
+          if (forecastCard) {
+            void forecastCard.offsetWidth;
+            forecastCard.classList.add('highlight-focus');
+            forecastCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }
       }
@@ -1770,6 +2068,13 @@
     function scrollToElement(id) {
       if (id === 'design-card') selectNavTab('design');
       else if (id === 'approval-card') selectNavTab('approval');
+      else if (id === 'forecast-section') {
+        selectNavTab('dashboard');
+        setTimeout(() => {
+          const el = document.getElementById('forecast-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 120);
+      }
       else {
         const el = document.getElementById(id);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1802,8 +2107,8 @@
     let timelineHistory = [];
     try {
       timelineHistory = JSON.parse(localStorage.getItem('nberm_timeline_history') || '[]');
-      // Automatically sanitize any legacy 860 mock points from previous versions
-      timelineHistory = timelineHistory.filter(p => Number(p.total) < 800);
+      // Automatically sanitize legacy 860 mock points or anomalous dip points (<= 5)
+      timelineHistory = timelineHistory.filter(p => Number(p.total) > 5 && Number(p.total) < 800);
     } catch (e) {
       timelineHistory = [];
     }
@@ -1841,7 +2146,7 @@
       const timeSinceLast = lastEntry ? (now - lastEntry.time) : 999999;
       const countChanged = lastEntry ? (lastEntry.total !== totalWorkload || lastEntry.locked !== totalLocked) : true;
 
-      if (!lastEntry || timeSinceLast >= 45000 || (timeSinceLast >= 10000 && countChanged)) {
+      if (totalWorkload > 5 && (!lastEntry || timeSinceLast >= 45000 || (timeSinceLast >= 10000 && countChanged))) {
         timelineHistory.push({
           time: now,
           total: totalWorkload,
@@ -1851,8 +2156,8 @@
           approval: appTotal
         });
 
-        // Keep maximum 16 chronological points for rich undulating curve (Picture 2 style)
-        if (timelineHistory.length > 16) {
+        // Keep maximum 32 chronological points for rich timeline curve and reliable live velocity
+        if (timelineHistory.length > 32) {
           timelineHistory.shift();
         }
         localStorage.setItem('nberm_timeline_history', JSON.stringify(timelineHistory));
@@ -2165,6 +2470,16 @@
       const totalLocked = appLocked + qLocked;
       const totalOpen = appOpen + qOpen;
 
+      // Safety guard against anomalous 1-order payload if we previously had a healthy workload
+      const savedPeak = Number(localStorage.getItem('nberm_daily_peak') || '0');
+      if (totalWorkload <= 5 && (window.__lastVerifiedWorkload > 10 || savedPeak > 10)) {
+        console.warn('[NBERM Dashboard] Suppressed transient <=5 glitch payload');
+        return;
+      }
+      if (totalWorkload > 5) {
+        window.__lastVerifiedWorkload = totalWorkload;
+      }
+
       if (prevLockedCount !== -1 && totalLocked > prevLockedCount) {
         playChime();
       }
@@ -2293,7 +2608,10 @@
       // 6. Live Timeline & Diagnostics
       renderRealtimeTimeline(data, totalWorkload, totalLocked, totalOpen, qTotal, qLocked, appTotal, appLocked);
 
-      // 7. Timestamp
+      // 7. Live Real-Time Completion Forecast & ETA
+      renderCompletionETA(totalWorkload, appTotal, qTotal);
+
+      // 8. Timestamp
       if (data.timestamp) {
         const diffSec = Math.max(0, Math.round((Date.now() - data.timestamp) / 1000));
         let timeTxt = 'Synced just now';
@@ -2306,6 +2624,144 @@
       }
     }
 
+    /**
+     * Real-time Completion Forecast & ETA Engine (Pure Live Working Speed)
+     * Measures actual workload reductions (completed orders) across live timelineHistory snapshots.
+     */
+    function renderCompletionETA(totalWorkload, appTotal, qTotal) {
+      const now = Date.now();
+      const heroTimeEl = document.getElementById('forecast-hero-time');
+      const heroCountdownEl = document.getElementById('forecast-hero-countdown');
+      const speedRateEl = document.getElementById('forecast-speed-rate');
+      const paceValEl = document.getElementById('forecast-pace-val');
+      const avgTimeValEl = document.getElementById('forecast-avg-time-val');
+      const appEtaValEl = document.getElementById('forecast-app-eta-val');
+      const appCountSubEl = document.getElementById('forecast-app-count-sub');
+      const designEtaValEl = document.getElementById('forecast-design-eta-val');
+      const designCountSubEl = document.getElementById('forecast-design-count-sub');
+      const navEtaTextEl = document.getElementById('nav-eta-text');
+      const navPillLabel = document.getElementById('nav-pill-eta-label');
+      const subheaderEtaTextEl = document.getElementById('subheader-eta-text');
+
+      if (appCountSubEl) appCountSubEl.innerText = `${appTotal} pending orders`;
+      if (designCountSubEl) designCountSubEl.innerText = `${qTotal} pending orders`;
+
+      // 1. If All Queues Cleared (0 orders)
+      if (totalWorkload <= 0) {
+        if (heroTimeEl) heroTimeEl.innerText = 'Completed';
+        if (heroCountdownEl) heroCountdownEl.innerText = 'All queues cleared! (0 orders)';
+        if (speedRateEl) speedRateEl.innerText = 'All Done';
+        if (paceValEl) paceValEl.innerText = '0 orders / hr';
+        if (avgTimeValEl) avgTimeValEl.innerText = '--';
+        if (appEtaValEl) appEtaValEl.innerText = '0 min';
+        if (designEtaValEl) designEtaValEl.innerText = '0 min';
+        if (navPillLabel) navPillLabel.innerText = 'Estimated Time (Done)';
+        if (navEtaTextEl) navEtaTextEl.innerText = 'Cleared (0)';
+        if (subheaderEtaTextEl) subheaderEtaTextEl.innerText = 'Cleared (0)';
+        return;
+      }
+
+      // 2. Evaluate Live Velocity from chronological timeline snapshots
+      const validPoints = (timelineHistory || []).filter(p => p && p.time && Number(p.total) > 0);
+
+      // Analyze completed drops within the last 35 minutes
+      const windowCutoff = now - (35 * 60 * 1000);
+      const windowPoints = validPoints.filter(p => p.time >= windowCutoff);
+
+      let completedDrops = 0;
+      let earliestTime = now;
+      let latestTime = now;
+
+      if (windowPoints.length >= 2) {
+        earliestTime = windowPoints[0].time;
+        latestTime = windowPoints[windowPoints.length - 1].time;
+
+        for (let i = 0; i < windowPoints.length - 1; i++) {
+          const pCurrent = windowPoints[i];
+          const pNext = windowPoints[i + 1];
+
+          // Count orders cleared between consecutive snapshots
+          if (pCurrent.total > pNext.total) {
+            completedDrops += (pCurrent.total - pNext.total);
+          }
+        }
+      }
+
+      const elapsedMinutes = Math.max(0.5, (latestTime - earliestTime) / 60000);
+      let burnRatePerMin = 0;
+
+      if (completedDrops > 0 && elapsedMinutes >= 0.75) {
+        burnRatePerMin = completedDrops / elapsedMinutes;
+      } else if (windowPoints.length >= 2 && elapsedMinutes >= 1.5) {
+        // Fallback: check net reduction from start of session
+        const netCleared = windowPoints[0].total - totalWorkload;
+        if (netCleared > 0) {
+          burnRatePerMin = netCleared / elapsedMinutes;
+        }
+      }
+
+      // If still measuring (not enough drops recorded yet in current session)
+      if (burnRatePerMin <= 0) {
+        if (heroTimeEl) heroTimeEl.innerText = 'Measuring...';
+        if (heroCountdownEl) heroCountdownEl.innerText = `Analyzing live speed (${totalWorkload} orders left)...`;
+        if (speedRateEl) speedRateEl.innerText = 'Speed: Measuring...';
+        if (paceValEl) paceValEl.innerText = 'Measuring...';
+        if (avgTimeValEl) avgTimeValEl.innerText = 'Calculating...';
+        if (appEtaValEl) appEtaValEl.innerText = '-- min';
+        if (designEtaValEl) designEtaValEl.innerText = '-- min';
+        if (navPillLabel) navPillLabel.innerText = 'Estimated Time';
+        if (navEtaTextEl) navEtaTextEl.innerText = 'Finish: Measuring...';
+        if (subheaderEtaTextEl) subheaderEtaTextEl.innerText = 'Finish: Measuring...';
+        return;
+      }
+
+      // 3. Compute Remaining Minutes and Projected Finish Clock Time
+      const remainingMinutes = Math.max(1, Math.round(totalWorkload / burnRatePerMin));
+      const burnRatePerHour = Math.round(burnRatePerMin * 60);
+      const avgTimePerOrder = (1 / burnRatePerMin).toFixed(1);
+
+      // Separate Queue ETAs based on their workload proportion
+      const appRatio = totalWorkload > 0 ? (appTotal / totalWorkload) : 0.5;
+      const designRatio = totalWorkload > 0 ? (qTotal / totalWorkload) : 0.5;
+      const appEtaMin = Math.round(remainingMinutes * appRatio);
+      const designEtaMin = Math.round(remainingMinutes * designRatio);
+
+      // Target finish date & clock time in 12-hour AM/PM format
+      const finishDate = new Date(now + (remainingMinutes * 60000));
+      const finishClockTime = finishDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      // Formatted countdown label
+      let countdownText = '';
+      if (remainingMinutes < 60) {
+        countdownText = `in ~${remainingMinutes} min (${totalWorkload} orders left)`;
+      } else {
+        const hrs = Math.floor(remainingMinutes / 60);
+        const mins = remainingMinutes % 60;
+        countdownText = `in ~${hrs}h ${mins}m (${totalWorkload} orders left)`;
+      }
+
+      // Update Hero Finish Box
+      if (heroTimeEl) heroTimeEl.innerText = finishClockTime;
+      if (heroCountdownEl) heroCountdownEl.innerText = countdownText;
+
+      // Update Speed Badges
+      if (speedRateEl) speedRateEl.innerText = `Speed: ~${burnRatePerHour} orders/hr`;
+      if (paceValEl) paceValEl.innerText = `${burnRatePerHour} orders / hr`;
+      if (avgTimeValEl) avgTimeValEl.innerText = `${avgTimePerOrder} min / order`;
+
+      // Update Individual Queue ETAs
+      if (appEtaValEl) appEtaValEl.innerText = `~${appEtaMin} min`;
+      if (designEtaValEl) designEtaValEl.innerText = `~${designEtaMin} min`;
+
+      // Update Top Nav Pill and Subheader Badges
+      if (navPillLabel) navPillLabel.innerText = `Estimated Time (~${finishClockTime})`;
+      if (navEtaTextEl) navEtaTextEl.innerText = `Finish: ~${finishClockTime}`;
+      if (subheaderEtaTextEl) {
+        const shortRem = remainingMinutes < 60 ? `${remainingMinutes}m` : `${Math.floor(remainingMinutes / 60)}h ${remainingMinutes % 60}m`;
+        subheaderEtaTextEl.innerText = `Finish: ~${finishClockTime} (${shortRem})`;
+      }
+    }
+
     // --- FETCH FROM SUPABASE / API ---
     const SUPABASE_URL = 'https://atckbreoadvmzpllsfjl.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_UagRupbU-ur550mE1_E-aA_IG4KC1rB';
@@ -2313,16 +2769,15 @@
     async function loadStatus(isManual = false) {
       // 1. Direct fetch from Supabase REST API (Instant, live, zero serverless limits)
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders_status?id=eq.current&select=*`, {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders_status?id=eq.current&select=*&apikey=${SUPABASE_KEY}`, {
           headers: {
             'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
           },
-          signal: controller.signal
+          cache: 'no-store'
         });
-        clearTimeout(timeoutId);
         if (res.ok) {
           const rows = await res.json();
           if (Array.isArray(rows) && rows.length > 0 && rows[0]) {
@@ -2436,7 +2891,7 @@
     // --- SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=5').then((reg) => {
+        navigator.serviceWorker.register('./sw.js?v=7').then((reg) => {
           reg.update();
         }).catch(() => {});
       });
