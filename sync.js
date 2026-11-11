@@ -1,18 +1,18 @@
 /**
- * Project 3: NBERM Phone Sync (Chrome Extension v1.2.2 - Ultra-Fast Decoupled Edition)
+ * Project 3: NBERM Phone Sync (Chrome Extension v1.2.3 - Ultra-Fast Decoupled Edition)
  * - 100% Decoupled Background Server Sync: Zero interference with desk screen or Page Splitting
  * - Blazing Fast Sub-Second Sync: Page 1 queue heartbeat (~180ms) + Action Trigger (350ms)
  * - Zero Working Screen Interference: Never scrapes or reads the user's active window DOM
- * - Unaffected by Desktop Filters: Server requests explicitly reset filters (&searchrush=&searchqueue=...)
+ * - Accurate Lock Filtering: Authoritative checked_out.png + strict amber/yellow highlight (immune to gray zebra striping)
+ * - Auto-Expiring Deep Scanner: Deep page locks are replaced fresh every sweep so completed orders vanish immediately
  * - Order Review Screen Immunity: Safely returns null on single order review views, preserving verified stats
- * - Non-Blocking Deep Multi-Page Engine: Sweeps page 2+ locked orders asynchronously without delaying totals
  * - Continuous Background Syncing directly to Supabase PostgreSQL (even when PC is locked / Win + L)
  */
 
 (function () {
   'use strict';
 
-  const VERSION = '1.2.2';
+  const VERSION = '1.2.3';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -59,24 +59,56 @@
     return `${origin}/administrator/index2.php?option=com_mps&task=${task}&limit=100&limitstart=${limitstart}&searchrush=&searchqueue=&searchproduct=&searchlate=&search=&order_id_keyword=&_t=${ts}`;
   }
 
-  // Checks if a row is checked out / claimed by reviewer background color
-  function isRowCheckedOut(row) {
-    if (!row) return false;
-    let bg = (row.getAttribute('bgcolor') || (row.style ? row.style.backgroundColor : '') || '').toLowerCase();
-    if (!bg && row.cells && row.cells.length > 0) {
-      for (let i = 0; i < Math.min(row.cells.length, 4); i++) {
-        const cellBg = (row.cells[i].getAttribute('bgcolor') || (row.cells[i].style ? row.cells[i].style.backgroundColor : '') || '').toLowerCase();
-        if (cellBg && (cellBg.includes('fcd2') || cellBg.includes('fdd8') || cellBg.includes('f8b8') || cellBg.includes('ffe5') || cellBg.includes('252') || cellBg.includes('253') || cellBg.includes('248') || cellBg.includes('gold') || cellBg.includes('yellow'))) {
-          bg = cellBg;
-          break;
-        }
+  // Checks if a background color is genuinely yellow/amber/gold (checked-out), NOT gray/white zebra striping!
+  function isYellowHighlight(colorStr) {
+    if (!colorStr) return false;
+    const s = colorStr.replace(/\s+/g, '').toLowerCase();
+    if (s === 'transparent' || s === '#fff' || s === '#ffffff' || s === 'white' || s === '#000' || s === '#000000') {
+      return false;
+    }
+    // Explicit hex codes used by Joomla / NBERM for highlights
+    if (
+      s.includes('#ffffcc') || s.includes('#ffffe0') || s.includes('#fff3cd') || 
+      s.includes('#fef08a') || s.includes('#fde047') || s.includes('#fcd34d') || 
+      s.includes('#fbbf24') || s.includes('#f59e0b') || s.includes('#fcd2') || 
+      s.includes('#fdd8') || s.includes('#f8b8') || s.includes('#ffe5') ||
+      s === 'gold' || s === 'yellow'
+    ) {
+      return true;
+    }
+    // RGB / RGBA check: Yellow/amber has high red & high green, but distinctly low blue!
+    // Gray zebra striping (e.g. rgb(248, 248, 248)) has r ~= g ~= b (diff < 15), so it is excluded!
+    const rgbMatch = s.match(/rgba?\((\d+),(\d+),(\d+)/);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1], 10);
+      const g = parseInt(rgbMatch[2], 10);
+      const b = parseInt(rgbMatch[3], 10);
+      if (r >= 200 && g >= 170 && (r - b) >= 45) {
+        return true;
       }
     }
-    return !!(bg && (
-      bg.includes('fcd2') || bg.includes('fdd8') || bg.includes('f8b8') || 
-      bg.includes('ffe5') || bg.includes('252') || bg.includes('253') || 
-      bg.includes('248') || bg.includes('gold') || bg.includes('yellow')
-    ));
+    return false;
+  }
+
+  // Authoritative check if a row is checked out / locked by a reviewer/designer
+  function isRowCheckedOut(row) {
+    if (!row) return false;
+    // 1. Explicit Joomla lock image (primary authority)
+    const lockImg = row.querySelector('img[src*="checked_out"], img[src*="padlock"], img[alt*="Checked out" i], img[title*="Checked out" i]');
+    if (lockImg && lockImg.getAttribute('name') !== 'lockqueue' && (!lockImg.closest || !lockImg.closest('#toolbar, .toolbar'))) {
+      return true;
+    }
+    // 2. Explicit yellow/amber highlight on row or cells (excluding alternating zebra striping)
+    const bg = (row.getAttribute('bgcolor') || (row.style ? row.style.backgroundColor : '') || '').toLowerCase();
+    if (isYellowHighlight(bg)) return true;
+
+    if (row.cells && row.cells.length > 0) {
+      for (let i = 0; i < Math.min(row.cells.length, 5); i++) {
+        const cellBg = (row.cells[i].getAttribute('bgcolor') || (row.cells[i].style ? row.cells[i].style.backgroundColor : '') || '').toLowerCase();
+        if (isYellowHighlight(cellBg)) return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -264,7 +296,7 @@
 
           if (orderId) {
             lockedIds.add(orderId);
-          } else {
+          } else if (isImgLocked) {
             fallbackLockCount++;
           }
         }
@@ -417,7 +449,7 @@
     if (!currentStats || currentStats.total <= 100) return;
 
     const totalCount = currentStats.total;
-    const deepSet = cachedDeepLocks[targetQueueType];
+    const freshDeepSet = new Set();
 
     for (let start = 100; start < totalCount; start += 100) {
       await new Promise(r => setTimeout(r, 600)); // Polite delay to prevent session lock
@@ -432,13 +464,16 @@
             const pageStats = extractStatsFromDom(doc, targetQueueType);
             if (pageStats && pageStats.lockedIds && pageStats.lockedIds.size > 0) {
               for (const id of pageStats.lockedIds) {
-                deepSet.add(id);
+                freshDeepSet.add(id);
               }
             }
           }
         }
       } catch (e) {}
     }
+
+    // Replace cached deep locks so completed/unlocked orders are cleanly removed!
+    cachedDeepLocks[targetQueueType] = freshDeepSet;
 
     // Always reset session limitstart back to 0 silently
     try {
