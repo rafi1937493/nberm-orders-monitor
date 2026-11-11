@@ -1,5 +1,5 @@
 /**
- * Background Service Worker for NBERM Phone Sync (v1.2.2 - Ultra-Fast Edition)
+ * Background Service Worker for NBERM Phone Sync (v1.2.3 - Ultra-Fast Edition)
  * - Direct real-time sync to Supabase PostgreSQL (zero quota restrictions).
  * - Runs with full extension privileges, bypassing page CSP restrictions.
  * - Chrome Alarms keep this worker alive even when PC is locked (Win + L).
