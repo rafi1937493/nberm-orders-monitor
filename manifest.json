@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "3 - NBERM Phone Sync",
-  "version": "1.1.4",
-  "description": "Live queue and locked orders sync to Supabase & phone dashboard.",
+  "version": "1.2.2",
+  "description": "Ultra-fast decoupled background server sync for Approval & Design queues to Supabase & phone dashboard.",
   "icons": {
     "16": "icon-16.png",
     "32": "icon-32.png",
@@ -26,7 +26,8 @@
     "https://*.supabase.co/*",
     "https://*.vercel.app/*",
     "https://*.nberm.com/*",
-    "http://*.nberm.com/*"
+    "http://*.nberm.com/*",
+    "https://rafi1937493.github.io/*"
   ],
   "background": {
     "service_worker": "background.js"
