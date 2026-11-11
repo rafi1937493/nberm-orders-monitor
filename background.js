@@ -1,18 +1,20 @@
 /**
- * Background Service Worker for NBERM Phone Sync (v1.1.4 - Direct Supabase & Split-Safe Edition)
+ * Background Service Worker for NBERM Phone Sync (v1.2.2 - Ultra-Fast Edition)
  * - Direct real-time sync to Supabase PostgreSQL (zero quota restrictions).
  * - Runs with full extension privileges, bypassing page CSP restrictions.
  * - Chrome Alarms keep this worker alive even when PC is locked (Win + L).
+ * - Bulletproof firewall: blocks transient <= 5 plunge anomalies when queue is active.
  * - Bulletproof error suppression for unmounted tabs and port disconnects.
  */
 
 const SUPABASE_URL = 'https://atckbreoadvmzpllsfjl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_UagRupbU-ur550mE1_E-aA_IG4KC1rB';
-const VERCEL_URL = 'https://nberm-orders-monitor.vercel.app';
 
-// Create persistent periodic heartbeat alarm (every 15 seconds)
+let lastVerifiedTotal = 0;
+
+// Create persistent periodic heartbeat alarm (every ~6 seconds)
 try {
-  chrome.alarms.create('nberm_lock_sync_timer', { periodInMinutes: 0.25 });
+  chrome.alarms.create('nberm_lock_sync_timer', { periodInMinutes: 0.1 });
 } catch (e) {}
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -39,13 +41,29 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message && message.type === 'SYNC_STATS') {
     const payload = message.payload;
+    if (!payload) return false;
+
+    const totalVal = Number(payload.total || 0);
+    const lockedVal = Number(payload.locked || 0);
+
+    // Track healthy workload
+    if (totalVal > 10) {
+      lastVerifiedTotal = totalVal;
+    }
+
+    // Safety firewall: Never push an anomalous total of <= 5 if the queue was previously verified
+    if (totalVal <= 5 && lastVerifiedTotal > 10) {
+      console.warn(`[NBERM Phone Sync SW] Blocked anomalous plunge payload (${totalVal} orders, last verified was ${lastVerifiedTotal})`);
+      try { sendResponse({ success: false, blocked: true }); } catch (e) {}
+      return false;
+    }
 
     // 1. Primary Push directly to Supabase REST API (Instant & Unlimited)
     const supabasePayload = {
       id: 'current',
-      total: Number(payload.total || 0),
-      count: Number(payload.count || payload.total || 0),
-      locked: Number(payload.locked || 0),
+      total: totalVal,
+      count: Number(payload.count || totalVal),
+      locked: lockedVal,
       unlocked: Number(payload.unlocked || 0),
       approval: payload.approval || {},
       queue: payload.queue || {},
@@ -70,15 +88,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(err => {
         try { sendResponse({ success: false, error: err.message }); } catch (e) {}
       });
-
-    // 2. Secondary fallback
-    try {
-      fetch(`${VERCEL_URL}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(() => {});
-    } catch (e) {}
 
     return true; // Keep message channel open until fetch finishes
   }
