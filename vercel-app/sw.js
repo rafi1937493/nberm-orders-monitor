@@ -1,15 +1,15 @@
-const CACHE_NAME = 'nberm-orders-v8';
+const CACHE_NAME = 'nberm-orders-v9';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './manifest.webmanifest?v=8',
+  './manifest.webmanifest?v=9',
   './manifest.json',
-  './icon-192.png?v=8',
-  './icon-512.png?v=8',
-  './icon-maskable-512.png?v=8',
-  './favicon.png?v=8',
-  './favicon-64.png?v=8',
-  './logo.svg?v=8'
+  './icon-192.png?v=9',
+  './icon-512.png?v=9',
+  './icon-maskable-512.png?v=9',
+  './favicon.png?v=9',
+  './favicon-64.png?v=9',
+  './logo.svg?v=9'
 ];
 
 self.addEventListener('install', (event) => {
