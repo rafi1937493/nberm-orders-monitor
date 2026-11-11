@@ -1121,6 +1121,14 @@
       stroke: #38bdf8;
     }
 
+    .float-nav-item.active[data-tab="estimated-time"] {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.14);
+    }
+    .float-nav-item.active[data-tab="estimated-time"] svg {
+      stroke: #10b981;
+    }
+
     .float-nav-item.active::after {
       content: '';
       position: absolute;
@@ -1395,6 +1403,18 @@
         display: block !important;
       }
       body[data-mobile-tab="approval"] #approval-card {
+        display: flex !important;
+      }
+
+      body[data-mobile-tab="estimated-time"] .kpi-grid,
+      body[data-mobile-tab="estimated-time"] .middle-grid,
+      body[data-mobile-tab="estimated-time"] .queues-row {
+        display: none !important;
+      }
+      body[data-mobile-tab="estimated-time"] .forecast-section {
+        display: block !important;
+      }
+      body[data-mobile-tab="estimated-time"] #forecast-card {
         display: flex !important;
       }
     }
@@ -1904,18 +1924,12 @@
       </svg>
       <span>Approval</span>
     </button>
-    <button class="float-nav-item" data-tab="estimated-time" onclick="selectNavTab('estimated-time', event)">
+    <button class="float-nav-item" data-tab="estimated-time" onclick="selectNavTab('estimated-time', event)" title="Estimated Finish Time">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
-      <span>Estimated</span>
-    </button>
-    <button class="float-nav-item" data-tab="refresh" onclick="triggerManualRefresh()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" id="mobile-refresh-svg">
-        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-      </svg>
-      <span>Refresh</span>
+      <span>ET</span>
     </button>
   </nav>
 
@@ -2025,20 +2039,16 @@
 
       // 4. Handle navigation & dedicated view switching
       if (isMobile) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         if (tabName === 'design' && desCard) {
-          desCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
           void desCard.offsetWidth; // Force CSS reflow to re-trigger pulse/blink keyframes
           desCard.classList.add('highlight-focus');
         } else if (tabName === 'approval' && appCard) {
-          appCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
           void appCard.offsetWidth;
           appCard.classList.add('highlight-focus');
         } else if (tabName === 'estimated-time' && forecastCard) {
-          forecastCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
           void forecastCard.offsetWidth;
           forecastCard.classList.add('highlight-focus');
-        } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
         if (tabName === 'dashboard') {
@@ -2891,9 +2901,15 @@
     // --- SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=7').then((reg) => {
+        navigator.serviceWorker.register('./sw.js?v=8').then((reg) => {
           reg.update();
         }).catch(() => {});
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!window.__sw_reloaded) {
+          window.__sw_reloaded = true;
+          window.location.reload();
+        }
       });
     }
   </script>
