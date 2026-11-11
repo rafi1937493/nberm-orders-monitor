@@ -163,6 +163,10 @@
       background: linear-gradient(135deg, #f59e0b, #d97706);
       box-shadow: 0 2px 12px rgba(245, 158, 11, 0.45);
     }
+    .nav-pill[data-tab="estimated-time"].active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 2px 12px rgba(16, 185, 129, 0.45);
+    }
 
     /* Right Action Bar */
     .nav-actions {
@@ -2021,16 +2025,20 @@
 
       // 4. Handle navigation & dedicated view switching
       if (isMobile) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
         if (tabName === 'design' && desCard) {
+          desCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
           void desCard.offsetWidth; // Force CSS reflow to re-trigger pulse/blink keyframes
           desCard.classList.add('highlight-focus');
         } else if (tabName === 'approval' && appCard) {
+          appCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
           void appCard.offsetWidth;
           appCard.classList.add('highlight-focus');
         } else if (tabName === 'estimated-time' && forecastCard) {
+          forecastCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
           void forecastCard.offsetWidth;
           forecastCard.classList.add('highlight-focus');
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
         if (tabName === 'dashboard') {
@@ -2883,7 +2891,7 @@
     // --- SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=5').then((reg) => {
+        navigator.serviceWorker.register('./sw.js?v=7').then((reg) => {
           reg.update();
         }).catch(() => {});
       });
