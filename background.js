@@ -1,9 +1,9 @@
 /**
- * Background Service Worker for NBERM Phone Sync (v1.2.5 - Zero-Lag Ultra-Polite Edition)
+ * Background Service Worker for NBERM Phone Sync (v1.2.6 - Zero-Lag Ultra-Polite Edition)
  * - Direct real-time sync to Supabase PostgreSQL (zero quota restrictions).
  * - Runs with full extension privileges, bypassing page CSP restrictions.
  * - Chrome Alarms keep this worker alive even when PC is locked (Win + L).
- * - Bulletproof firewall: blocks transient <= 5 plunge anomalies when queue is active.
+ * - Allows genuine 0-order completion payloads when all work is cleared.
  * - Bulletproof error suppression for unmounted tabs and port disconnects.
  */
 
@@ -46,16 +46,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const totalVal = Number(payload.total || 0);
     const lockedVal = Number(payload.locked || 0);
 
-    // Track healthy workload
+    // Track verified workload; when work is fully completed, reset to 0
     if (totalVal > 10) {
       lastVerifiedTotal = totalVal;
-    }
-
-    // Safety firewall: Never push an anomalous total of <= 5 if the queue was previously verified
-    if (totalVal <= 5 && lastVerifiedTotal > 10) {
-      console.warn(`[NBERM Phone Sync SW] Blocked anomalous plunge payload (${totalVal} orders, last verified was ${lastVerifiedTotal})`);
-      try { sendResponse({ success: false, blocked: true }); } catch (e) {}
-      return false;
+    } else if (totalVal === 0) {
+      lastVerifiedTotal = 0;
     }
 
     // 1. Primary Push directly to Supabase REST API (Instant & Unlimited)
