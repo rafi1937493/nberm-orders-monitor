@@ -12,7 +12,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '1.2.5';
+  const VERSION = '1.2.6';
   if (window.__nberm_phone_sync_initialized) return;
   window.__nberm_phone_sync_initialized = Date.now();
 
@@ -449,9 +449,10 @@
 
       const totalCount = stats.total;
 
-      // Handle empty queue
+      // Handle empty queue (all orders cleared!)
       if (totalCount === 0) {
         const emptyStats = { total: 0, locked: 0, unlocked: 0, lockedIds: [] };
+        try { localStorage.setItem(baselineKey, '0'); } catch (e) {}
         setStoredStats(storageKey, emptyStats, 'server');
         return emptyStats;
       }
@@ -471,9 +472,9 @@
         lockedIds: Array.from(allLockedIds)
       };
 
-      if (totalCount > 5) {
+      try {
         localStorage.setItem(baselineKey, String(totalCount));
-      }
+      } catch (e) {}
       setStoredStats(storageKey, freshStats, 'server');
       return freshStats;
     } catch (err) {
@@ -552,31 +553,19 @@
     const appBaseline = parseInt(localStorage.getItem(BASELINE_KEY_APPROVAL) || '0', 10);
     const qBaseline = parseInt(localStorage.getItem(BASELINE_KEY_QUEUE) || '0', 10);
 
-    let appTotal = approval ? approval.total : appBaseline;
-    if ((appTotal == null || appTotal <= 1) && appBaseline > 5) {
-      appTotal = appBaseline;
-    }
+    let appTotal = (approval && approval.total != null) ? approval.total : appBaseline;
     appTotal = Math.max(0, appTotal || 0);
 
     let appLocked = approval ? approval.locked : 0;
     appLocked = Math.min(appTotal, Math.max(0, appLocked || 0));
     const appOpen = Math.max(0, appTotal - appLocked);
 
-    let qTotal = queue ? queue.total : qBaseline;
-    if ((qTotal == null || qTotal <= 1) && qBaseline > 5) {
-      qTotal = qBaseline;
-    }
+    let qTotal = (queue && queue.total != null) ? queue.total : qBaseline;
     qTotal = Math.max(0, qTotal || 0);
 
     let qLocked = queue ? queue.locked : 0;
     qLocked = Math.min(qTotal, Math.max(0, qLocked || 0));
     const qOpen = Math.max(0, qTotal - qLocked);
-
-    // Safety firewall: Never push an anomalous combined total of <= 5 if verified baseline was active
-    if (appTotal + qTotal <= 5 && (appBaseline + qBaseline > 10)) {
-      console.warn('[NBERM Live Sync] Blocked anomalous combined total <= 5');
-      return;
-    }
 
     const appLockedList = Array.isArray(approval?.lockedIds) ? approval.lockedIds : Array.from(approval?.lockedIds || []);
     const qLockedList = Array.isArray(queue?.lockedIds) ? queue.lockedIds : Array.from(queue?.lockedIds || []);
