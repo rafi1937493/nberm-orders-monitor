@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "3 - NBERM Phone Sync",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Ultra-fast decoupled background server sync for Approval & Design queues to Supabase & phone dashboard.",
   "icons": {
     "16": "icon-16.png",
